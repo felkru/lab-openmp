@@ -48,6 +48,14 @@ run-large: REP ?= 10000
 run-large: release
 	OMP_NUM_THREADS=${NTHREADS} ./${EXECUTABLE} -t ${NTHREADS} -f ${MAT_DIR}/mat_dim_493039.txt -r ${REP}
 
+# fast testing
+.PHONY: test-small test-large
+test-small:
+	$(MAKE) run-small REP=1000
+test-large:
+	$(MAKE) run-large REP=100
+# fast testing
+
 # prints out the usage of the command line feature
 help: build
 	./${EXECUTABLE} -h
