@@ -2,26 +2,26 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <omp.h>
+#include <numa.h>
 
-// utility header
-// This file is assumed to define:
-// - ooo_options, ooo_input, timespan structures
-// - parseCmdLine()
-// - loadInputFile_4SMXV()
-// - print_error_check()
-// - print_performance_results()
 #include "ooo_cmdline.h"
 
 void spmxv(ooo_options *tOptions, ooo_input *tInput)
 {
     int iNumRepetitions = tOptions->iNumRepetitions; // set with -r <numrep>
 
-    // setup data structures with aligned allocation for better vectorization
-    double *y = (double*) aligned_alloc(64, sizeof(double) * (tInput->stNumRows)); // result
-    double *Aval = (double*) aligned_alloc(64, sizeof(double) * (tInput->stNumNonzeros)); // values
-    int    *Acol = (int*) aligned_alloc(64, sizeof(int) * (tInput->stNumNonzeros)); // column indices
-    int    *Arow = (int*) aligned_alloc(64, sizeof(int) * (tInput->stNumRows + 1)); // begin of each row
-    double *x = (double*) aligned_alloc(64, sizeof(double) * (tInput->stNumRows)); // RHS
+    size_t y_size = sizeof(double) * (tInput->stNumRows);
+    size_t Aval_size = sizeof(double) * (tInput->stNumNonzeros);
+    size_t Acol_size = sizeof(int) * (tInput->stNumNonzeros);
+    size_t Arow_size = sizeof(int) * (tInput->stNumRows + 1);
+    size_t x_size = sizeof(double) * (tInput->stNumRows);
+    size_t timings_size = sizeof(timespan) * iNumRepetitions;
+
+    double * __restrict__ y = (double*) numa_alloc_interleaved(y_size);
+    double * __restrict__ Aval = (double*) numa_alloc_interleaved(Aval_size);
+    int    * __restrict__ Acol = (int*) numa_alloc_interleaved(Acol_size);
+    int    * __restrict__ Arow = (int*) numa_alloc_interleaved(Arow_size);
+    double * __restrict__ x = (double*) numa_alloc_interleaved(x_size);
 
     // allocate helper data
     timespan *timings = (timespan*) malloc(sizeof(timespan) * iNumRepetitions);
@@ -53,7 +53,7 @@ void spmxv(ooo_options *tOptions, ooo_input *tInput)
                 Acol[nz] = tInput->col[nz];
             }
         }
-    } 
+    }
 
     // take the time: start
     t1 = omp_get_wtime();
@@ -62,26 +62,18 @@ void spmxv(ooo_options *tOptions, ooo_input *tInput)
     {
         timings[rep].dBegin = omp_get_wtime();
 
-        double * __restrict__ y_ptr = y;
-        const double * __restrict__ Aval_ptr = Aval;
-        const int * __restrict__ Acol_ptr = Acol;
-        const int * __restrict__ Arow_ptr = Arow;
-        const double * __restrict__ x_ptr = x;
-
-        #pragma omp teams distribute parallel for schedule(guided, 64)
+        #pragma omp teams distribute parallel for schedule(dynamic, 1) proc_bind(spread)
         for (i = 0; i < tInput->stNumRows; i++)
         {
-            const int rowbeg = Arow_ptr[i];
-            const int rowend = Arow_ptr[i+1];
             double sum = 0.0;
-            
+
             #pragma omp simd reduction(+:sum)
-            for (int j = rowbeg; j < rowend; j++)
+            for (int j = Arow[i]; j < Arow[i+1]; j++)
             {
-                sum += Aval_ptr[j] * x_ptr[Acol_ptr[j]];
+                sum += Aval[j] * x[Acol[j]];
             }
 
-            y_ptr[i] = sum;
+            y[i] = sum;
         }
 
         timings[rep].dEnd = omp_get_wtime();
@@ -97,11 +89,12 @@ void spmxv(ooo_options *tOptions, ooo_input *tInput)
     print_performance_results(tOptions, t1, t2, timings, tInput);
 
     // cleanup
-    free(y);
-    free(Aval);
-    free(Acol);
-    free(Arow);
-    free(x);
+    numa_free(y, y_size);
+    numa_free(Aval, Aval_size);
+    numa_free(Acol, Acol_size);
+    numa_free(Arow, Arow_size);
+    numa_free(x, x_size);
+    numa_free(timings, timings_size);
     free(timings);
 
 } // end loop

@@ -1,4 +1,10 @@
 #!/usr/bin/env zsh
+#SBATCH -A lect0163
+#SBATCH -c 96
+#SBATCH -o output_%j.txt      # Standard output (%j = job ID)
+#SBATCH -e error_%j.txt       # Standard error
+#SBATCH -J spmxv        # Job name (optional)
+#SBATCH --time=01:00:00
 
 human_date() {
     date +'%Y-%m-%d %H:%M:%S'
@@ -10,9 +16,9 @@ file_date() {
 
 # argument parsing
 # defaults for arguments
-task=spmxv
+task=merge-sort
 version=release
-num_executions=23
+num_executions=6
 
 usage() {
     echo "usage: collect-benchmark.sh [-t <task>] [-v <version>] [-n <num-executions>] [-h | --help]" 1>&2

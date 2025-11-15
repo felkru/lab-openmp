@@ -2,7 +2,7 @@
 
 ### Job name
 #SBATCH --job-name=SWP_ManyCore_OpenMP
-#SBATCH --account=<project-id>
+#SBATCH --account=lect0163
 ###SBATCH --reservation=<advanced-reservation-id>
 
 ### File / path where STDOUT will be written, the %j is the job id
@@ -20,11 +20,11 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=96
 #SBATCH --exclusive
-#SBATCH --gres=gpu:4
+# #SBATCH --gres=gpu:4
 
 # Set this to the correct path
-BASE_DIR=~/Desktop/SWP_ManyCore_OpenMP
-TASK=spmxv
+BASE_DIR=~/lab-openmp
+TASK=merge-sort
 
 # name the benchmark folder
 VERSION=openmp

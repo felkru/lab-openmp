@@ -39,3 +39,8 @@ venv/
 # ------------------------------------
 # Exclude job output files generated during batch/interactive runs
 *.txt
+
+# ------------------------------------
+# 4. Evolutionary files
+# ------------------------------------
+testevolve

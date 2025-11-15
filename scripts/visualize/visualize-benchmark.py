@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import argparse
 import polars as pl
 import matplotlib.pyplot as plt

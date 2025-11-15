@@ -1,15 +1,12 @@
 
-TASK := spmxv
-SRCDIRS := . utils
+TASK := merge-sort
+SRCDIRS := .
 SRCEXT := cpp
 SOURCES := $(wildcard $(addsuffix /*.${SRCEXT}, ${SRCDIRS}))
 OBJECTS := $(SOURCES:%.${SRCEXT}=%.o)
 DEPENDENCIES := $(OBJECTS:%.o=%.d)
 EXECUTABLE := ${TASK}.exe
 DIRNAME := $(notdir ${CURDIR})
-
-# MAT_DIR needs to be set according to your local file placement
-MAT_DIR := input-matrix
 
 CXX ?= icpc
 COMPILER = ${CXX}
@@ -18,7 +15,7 @@ FLAGS = -g ${FLAGS_OPENMP}
 FLAGS_FAST = -O3
 FLAGS_DEBUG = -O0 -Wall -Wextra
 INCLUDES = $(addprefix -I, ${SRCDIRS})
-LDLIBS = -lnuma
+LDLIBS =
 
 NTHREADS ?= 1
 GROUP ?= X
@@ -40,30 +37,19 @@ ${EXECUTABLE}: ${OBJECTS}
 %.o: %.${SRCEXT}
 	${COMPILER} ${INCLUDES} -MMD -MP ${FLAGS} -c -o $@ $<
 
-run-small: REP ?= 100000
 run-small: release
-	OMP_NUM_THREADS=${NTHREADS} ./${EXECUTABLE} -t ${NTHREADS} -f ${MAT_DIR}/mat_dim_59319.txt -r ${REP}
+	OMP_NUM_THREADS=$(NTHREADS) ./${EXECUTABLE} 9999999
 
-run-large: REP ?= 10000
+run-mid: release
+	OMP_NUM_THREADS=$(NTHREADS) ./${EXECUTABLE} 99999999
+	
 run-large: release
-	OMP_NUM_THREADS=${NTHREADS} ./${EXECUTABLE} -t ${NTHREADS} -f ${MAT_DIR}/mat_dim_493039.txt -r ${REP}
-
-# fast testing
-.PHONY: test-small test-large
-test-small:
-	$(MAKE) run-small REP=1000
-test-large:
-	$(MAKE) run-large REP=100
-# fast testing
-
-# prints out the usage of the command line feature
-help: build
-	./${EXECUTABLE} -h
+	OMP_NUM_THREADS=$(NTHREADS) ./${EXECUTABLE} 999999999
 
 archive: clean
 	find . -maxdepth 1 -type f -exec tar --transform 's|^|${DIRNAME}-group-${GROUP}/|g' -cvzf ${DIRNAME}-group-${GROUP}.tar.gz {} +
 
-.PHONY: clean build debug release run-small run-large archive help
+.PHONY: clean build debug release run-small run-large archive
 clean:
 	${RM} ${EXECUTABLE}
 	${RM} ${OBJECTS}
