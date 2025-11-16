@@ -89,8 +89,19 @@ void MsMergeSequential(int *out, int *in, long begin1, long end1, long begin2, l
 void MsSequential(int *array, int *tmp, bool inplace, long begin, long end) {
 	if (begin < (end - 1)) {
 		const long half = (begin + end) / 2;
-		MsSequential(array, tmp, !inplace, begin, half);
-		MsSequential(array, tmp, !inplace, half, end);
+		const long size = end - begin;
+
+		if (size >= 20000) { // task overhead is not worth it for small tasks
+			#pragma omp task
+			MsSequential(array, tmp, !inplace, begin, half);
+			#pragma omp task
+			MsSequential(array, tmp, !inplace, half, end);
+			#pragma omp taskwait
+		} else {
+			MsSequential(array, tmp, !inplace, begin, half);
+			MsSequential(array, tmp, !inplace, half, end);
+		}
+
 		if (inplace) {
 			MsMergeSequential(array, tmp, begin, half, half, end, begin);
 		} else {
@@ -106,7 +117,8 @@ void MsSequential(int *array, int *tmp, bool inplace, long begin, long end) {
   * Serial MergeSort
   */
 void MsSerial(int *array, int *tmp, const size_t size) {
-
+	#pragma omp parallel
+	#pragma omp single
 	MsSequential(array, tmp, true, 0, size);
 }
 

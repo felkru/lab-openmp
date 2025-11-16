@@ -4,6 +4,7 @@ import argparse
 import polars as pl
 import matplotlib.pyplot as plt
 import os
+import sys
 
 parser = argparse.ArgumentParser(description="Visualize contents of a csv file containing the collected benchmark results")
 parser.add_argument("-csv", "--csv-file", 
@@ -45,6 +46,14 @@ match args.aggregation:
         mode = "Average"
         df_small = df.filter(pl.col("size") == "small").group_by("num_threads").agg(pl.col(args.column_name).mean()).sort("num_threads")
         df_large = df.filter(pl.col("size") == "large").group_by("num_threads").agg(pl.col(args.column_name).mean()).sort("num_threads")
+
+# Check if dataframes are not empty
+if len(df_small) == 0:
+    print(f"Error: No data found for size=\"small\" in {args.csv_file}", file=sys.stderr)
+    sys.exit(1)
+if len(df_large) == 0:
+    print(f"Error: No data found for size=\"large\" in {args.csv_file}", file=sys.stderr)
+    sys.exit(1)
 
 min_small = df.filter(pl.col("size") == "small").group_by("num_threads").agg(pl.col(args.column_name).min()).sort("num_threads")
 max_small = df.filter(pl.col("size") == "small").group_by("num_threads").agg(pl.col(args.column_name).max()).sort("num_threads")
