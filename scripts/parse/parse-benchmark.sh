@@ -2,9 +2,9 @@
 
 # argument parsing
 # defaults for arguments
-task=spmxv
+task=merge-sort
 directory=$(pwd)
-num_executions=23
+num_executions=6
 
 usage() {
     echo "usage: parse-benchmark.sh [-t <task>] [-d <directory>] [-n <num-executions>] [-h | --help]" 1>&2

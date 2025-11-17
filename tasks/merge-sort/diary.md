@@ -11,6 +11,7 @@
 - [ ] NUMA-local memory
 - [ ] Pre-allocated temp buffer
 - [ ] Profile & tune threshold
+- [ ] Reset to 23 iterations
 
 ### Tools for profiling
 perf, vtune, gprof, TAU

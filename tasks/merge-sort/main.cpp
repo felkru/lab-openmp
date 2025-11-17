@@ -91,7 +91,7 @@ void MsSequential(int *array, int *tmp, bool inplace, long begin, long end) {
 		const long half = (begin + end) / 2;
 		const long size = end - begin;
 
-		if (size >= 20000) { // task overhead is not worth it for small tasks
+		if (size >= 30389) { // task overhead is not worth it for small tasks
 			#pragma omp task
 			MsSequential(array, tmp, !inplace, begin, half);
 			#pragma omp task
@@ -111,7 +111,6 @@ void MsSequential(int *array, int *tmp, bool inplace, long begin, long end) {
 		tmp[begin] = array[begin];
 	}
 }
-
 
 /**
   * Serial MergeSort
