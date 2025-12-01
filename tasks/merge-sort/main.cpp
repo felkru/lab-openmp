@@ -82,7 +82,6 @@ void MsMergeSequential(int *out, int *in, long begin1, long end1, long begin2, l
 	}
 }
 
-
 /**
   * sequential MergeSort
   */
@@ -91,7 +90,7 @@ void MsSequential(int *array, int *tmp, bool inplace, long begin, long end) {
 		const long half = (begin + end) / 2;
 		const long size = end - begin;
 
-		if (size >= 30389) { // task overhead is not worth it for small tasks
+		if (size >= 30000) { // task overhead is not worth it for small tasks
 			#pragma omp task
 			MsSequential(array, tmp, !inplace, begin, half);
 			#pragma omp task
@@ -135,8 +134,7 @@ int main(int argc, char* argv[]) {
 		printf("Usage: MergeSort.exe <array size> \n");
 		printf("\n");
 		return EXIT_FAILURE;
-	}
-	else {
+	} else {
 		const size_t stSize = strtol(argv[1], NULL, 10);
 		int *data = (int*) malloc(stSize * sizeof(int));
 		int *tmp = (int*) malloc(stSize * sizeof(int));

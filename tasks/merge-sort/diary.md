@@ -7,11 +7,14 @@
 - [ ] Parallel merge via block binary search
 - [ ] SIMD in merge kernels
 - [ ] Work-stealing / dynamic scheduling
+- [ ] Replace the single-threaded merges after the cutoff with a more efficient algorithm
 - [ ] Cache-line aware output
 - [ ] NUMA-local memory
 - [ ] Pre-allocated temp buffer
 - [ ] Profile & tune threshold
 - [ ] Reset to 23 iterations
+
+Goal: 0,5s for large run
 
 ### Tools for profiling
 perf, vtune, gprof, TAU
