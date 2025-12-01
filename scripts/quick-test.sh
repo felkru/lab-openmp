@@ -1,6 +1,6 @@
 #!/usr/bin/env zsh
-# Usage: ./scripts/quick-test.sh [num_threads]
-# Default: 96 threads if not specified
+# Usage: ./scripts/quick-test.sh large 1 96
+# Default: large problem, 3 iterations and 96 threads if none is specified
 
 PROBLEM_SIZE=${1:-large}
 NUM_ITER=${2:-3}
@@ -16,6 +16,7 @@ srun --account=lect0163 \
      --exclusive \
      --time=00:10:00 \
      zsh -c "
+         ulimit -n 2048
          cd ${TASK_DIR}
          source setup-environment.sh
          make clean build

@@ -2,9 +2,10 @@
 
 ## Todo List
 - [x] Parallel divide with tasks + cutoff
-    - [ ] determine best cutoff using binary search
+    - [x] determine best cutoff using binary search
     - [ ] seperate MsSequential and MsParrallel to avoid cutoff checks 
-- [ ] Parallel merge via block binary search
+- [x] Parallel merge via block binary search
+    - [x] determine the best cutoff here
 - [ ] SIMD in merge kernels
 - [ ] Work-stealing / dynamic scheduling
 - [ ] Replace the single-threaded merges after the cutoff with a more efficient algorithm
@@ -81,4 +82,13 @@ done, took 11.134000 sec. Verification... successful.
 | 50000  | 5.228      |
 
 *Result:* Go with a cutoff of `20.000` for now.
+
+## Parrallel merge via binary search
+## Tuning Results
+| Cutoff | Time (sec) |
+|--------|------------|
+| 250000 | 2.974000   |
+| 173333 | 2.984000   |
+| 100000 | 3.140000   |
+| 50000  | 3.272000   |
 

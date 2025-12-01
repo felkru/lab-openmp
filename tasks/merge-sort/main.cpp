@@ -83,6 +83,43 @@ void MsMergeSequential(int *out, int *in, long begin1, long end1, long begin2, l
 }
 
 /**
+  * parallel merge step
+  */
+void MsMergeParallel(int *out, int *in, long begin1, long end1, long begin2, long end2, long outBegin) {
+	long n1 = end1 - begin1;
+	long n2 = end2 - begin2;
+
+	if (n1 + n2 < 250000) {
+		MsMergeSequential(out, in, begin1, end1, begin2, end2, outBegin);
+		return;
+	}
+
+	if (n1 >= n2) {
+		long mid1 = (begin1 + end1) / 2;
+		long mid2 = std::lower_bound(in + begin2, in + end2, in[mid1]) - in;
+		long outMid = outBegin + (mid1 - begin1) + (mid2 - begin2);
+		out[outMid] = in[mid1];
+
+		#pragma omp task
+		MsMergeParallel(out, in, begin1, mid1, begin2, mid2, outBegin);
+		#pragma omp task
+		MsMergeParallel(out, in, mid1 + 1, end1, mid2, end2, outMid + 1);
+		#pragma omp taskwait
+	} else {
+		long mid2 = (begin2 + end2) / 2;
+		long mid1 = std::upper_bound(in + begin1, in + end1, in[mid2]) - in;
+		long outMid = outBegin + (mid1 - begin1) + (mid2 - begin2);
+		out[outMid] = in[mid2];
+
+		#pragma omp task
+		MsMergeParallel(out, in, begin1, mid1, begin2, mid2, outBegin);
+		#pragma omp task
+		MsMergeParallel(out, in, mid1, end1, mid2 + 1, end2, outMid + 1);
+		#pragma omp taskwait
+	}
+}
+
+/**
   * sequential MergeSort
   */
 void MsSequential(int *array, int *tmp, bool inplace, long begin, long end) {
@@ -102,9 +139,9 @@ void MsSequential(int *array, int *tmp, bool inplace, long begin, long end) {
 		}
 
 		if (inplace) {
-			MsMergeSequential(array, tmp, begin, half, half, end, begin);
+			MsMergeParallel(array, tmp, begin, half, half, end, begin);
 		} else {
-			MsMergeSequential(tmp, array, begin, half, half, end, begin);
+			MsMergeParallel(tmp, array, begin, half, half, end, begin);
 		}
 	} else if (!inplace) {
 		tmp[begin] = array[begin];
