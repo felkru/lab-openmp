@@ -14,7 +14,7 @@ srun --account=lect0163 \
      --ntasks=1 \
      --cpus-per-task=${NTHREADS} \
      --exclusive \
-     --time=00:10:00 \
+     --time=00:03:00 \
      zsh -c "
          ulimit -n 2048
          cd ${TASK_DIR}

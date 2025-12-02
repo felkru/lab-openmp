@@ -179,9 +179,10 @@ int main(int argc, char* argv[]) {
 
 		printf("Initialization...\n");
 
-		srand(95);
+		#pragma omp parallel for
 		for (size_t idx = 0; idx < stSize; ++idx){
-			data[idx] = (int) (stSize * (double(rand()) / RAND_MAX));
+			unsigned int seed = 95 + idx;
+			data[idx] = (int) (stSize * (double(rand_r(&seed)) / RAND_MAX));
 		}
 		std::copy(data, data + stSize, ref);
 
