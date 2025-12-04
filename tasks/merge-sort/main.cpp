@@ -26,6 +26,8 @@
 #include <sys/time.h>
 
 #include <iostream>
+#include <chrono>
+#include <iomanip>
 #include <algorithm>
 
 #include <cstdlib>
@@ -36,6 +38,14 @@
 #include <cstring>
 
 
+
+auto start_time = std::chrono::high_resolution_clock::now();
+
+void print_timestamp(const char* label) {
+    auto now = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = now - start_time;
+    std::cout << "[PROFILE] " << std::fixed << std::setprecision(6) << elapsed.count() << "s: " << label << std::endl;
+}
 
 /**
   * helper routine: check if array is sorted correctly
@@ -202,6 +212,7 @@ int main(int argc, char* argv[]) {
 	double etime;
 
 	// expect one command line arguments: array size
+    print_timestamp("Start of main");
 	if (argc != 2) {
 		printf("Usage: MergeSort.exe <array size> \n");
 		printf("\n");
@@ -211,6 +222,7 @@ int main(int argc, char* argv[]) {
 		int *data = (int*) malloc(stSize * sizeof(int));
 		int *tmp = (int*) malloc(stSize * sizeof(int));
 		int *ref = (int*) malloc(stSize * sizeof(int));
+        print_timestamp("Memory allocated");
 
 		printf("Initialization...\n");
 
@@ -219,14 +231,18 @@ int main(int argc, char* argv[]) {
 			unsigned int seed = 95 + idx;
 			data[idx] = (int) (stSize * (double(rand_r(&seed)) / RAND_MAX));
 		}
+        print_timestamp("Data initialized");
 		std::copy(data, data + stSize, ref);
+        print_timestamp("Reference copy created");
 
 		double dSize = (stSize * sizeof(int)) / 1024 / 1024;
 		printf("Sorting %zu elements of type int (%f MiB)...\n", stSize, dSize);
 
+        print_timestamp("Before MsSerial");
 		gettimeofday(&t1, NULL);
 		MsSerial(data, tmp, stSize);
 		gettimeofday(&t2, NULL);
+        print_timestamp("After MsSerial");
 		etime = (t2.tv_sec - t1.tv_sec) * 1000 + (t2.tv_usec - t1.tv_usec) / 1000;
 		etime = etime / 1000;
 
@@ -237,11 +253,13 @@ int main(int argc, char* argv[]) {
 		else {
 			printf(" FAILED.\n");
 		}
+        print_timestamp("Verification complete");
 
 		free(data);
 		free(tmp);
 		free(ref);
 	}
+    print_timestamp("End of main");
 
 	return EXIT_SUCCESS;
 }

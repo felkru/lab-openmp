@@ -9,7 +9,7 @@
 - [x] NUMA-local memory
 - [x] Replace the single-threaded sorts after the cutoff with a more efficient algorithm
 - [ ] Work-stealing / dynamic scheduling
-- [ ] Reset to 23 iterations
+- [x] Reset to 23 iterations
 - [ ] SIMD in merge kernels
 - [ ] Cache-line aware output
 - [ ] Pre-allocated temp buffer
