@@ -234,8 +234,18 @@ int main(int argc, char* argv[]) {
 			data[idx] = (int) (stSize * (double(rand_r(&seed)) / RAND_MAX));
 		}
         print_timestamp("Data initialized");
-		std::copy(data, data + stSize, ref);
+		#pragma omp parallel for
+		for (size_t idx = 0; idx < stSize; ++idx) {
+			ref[idx] = data[idx];
+		}
         print_timestamp("Reference copy created");
+
+		// Parallel first-touch for tmp
+		#pragma omp parallel for
+		for (size_t idx = 0; idx < stSize; ++idx) {
+			tmp[idx] = 0;
+		}
+        print_timestamp("Tmp initialized");
 
 		double dSize = (stSize * sizeof(int)) / 1024 / 1024;
 		printf("Sorting %zu elements of type int (%f MiB)...\n", stSize, dSize);
