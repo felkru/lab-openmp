@@ -39,6 +39,8 @@
 
 
 
+#include <parallel/algorithm>
+
 auto start_time = std::chrono::high_resolution_clock::now();
 
 void print_timestamp(const char* label) {
@@ -51,7 +53,7 @@ void print_timestamp(const char* label) {
   * helper routine: check if array is sorted correctly
   */
 bool isSorted(int ref[], int data[], const size_t size){
-	std::sort(ref, ref + size);
+	__gnu_parallel::sort(ref, ref + size);
 	for (size_t idx = 0; idx < size; ++idx){
 		if (ref[idx] != data[idx]) {
 			return false;
