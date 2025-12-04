@@ -7,7 +7,7 @@
 - [x] Parallel merge via block binary search
     - [x] determine the best cutoff here
 - [x] NUMA-local memory
-- [ ] Replace the single-threaded sorts after the cutoff with a more efficient algorithm
+- [x] Replace the single-threaded sorts after the cutoff with a more efficient algorithm
 - [ ] Work-stealing / dynamic scheduling
 - [ ] Reset to 23 iterations
 - [ ] SIMD in merge kernels
@@ -95,8 +95,26 @@ done, took 11.134000 sec. Verification... successful.
 | 100000 | 3.140000   |
 | 50000  | 3.272000   |
 
-# Numa-local memory
+## Numa-local memory
 
 ```zsh
 done, took 1.337000 sec. Verification... successful.
+```
+
+## Replace single-threaded merge-sorts (after cutoff) with std::sort
+
+cutoff 30.000
+```zsh
+done, took 1.503000 sec. Verification... successful.
+```
+
+cutoff 5.000
+```zsh
+done, took 1.507000 sec. Verification... successful.
+```
+
+## Replace single-threaded merge-sorts with Radix Sort
+
+```zsh
+done, took  0.946 sec. Verification... successful.
 ```

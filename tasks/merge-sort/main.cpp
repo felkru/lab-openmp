@@ -120,23 +120,58 @@ void MsMergeParallel(int *out, int *in, long begin1, long end1, long begin2, lon
 }
 
 /**
+  * sequential Sort
+  */
+void radixSort(int* arr, int* aux, long n) {
+	int count[256];
+	int* src = arr;
+	int* dst = aux;
+
+	for (int shift = 0; shift < 32; shift += 8) {
+		std::memset(count, 0, sizeof(count));
+		for (long i = 0; i < n; ++i) {
+			count[(src[i] >> shift) & 0xFF]++;
+		}
+		
+		int start = 0;
+		for (int i = 0; i < 256; ++i) {
+			int tmp = count[i];
+			count[i] = start;
+			start += tmp;
+		}
+
+		for (long i = 0; i < n; ++i) {
+			dst[count[(src[i] >> shift) & 0xFF]++] = src[i];
+		}
+
+		std::swap(src, dst);
+	}
+}
+
+/**
   * sequential MergeSort
   */
 void MsSequential(int *array, int *tmp, bool inplace, long begin, long end) {
 	if (begin < (end - 1)) {
-		const long half = (begin + end) / 2;
 		const long size = end - begin;
 
-		if (size >= 30000) { // task overhead is not worth it for small tasks
-			#pragma omp task
-			MsSequential(array, tmp, !inplace, begin, half);
-			#pragma omp task
-			MsSequential(array, tmp, !inplace, half, end);
-			#pragma omp taskwait
-		} else {
-			MsSequential(array, tmp, !inplace, begin, half);
-			MsSequential(array, tmp, !inplace, half, end);
+		if (size < 30000) {
+			if (inplace) {
+				radixSort(array + begin, tmp + begin, size);
+			} else {
+				std::copy(array + begin, array + end, tmp + begin);
+				radixSort(tmp + begin, array + begin, size);
+			}
+			return;
 		}
+
+		const long half = (begin + end) / 2;
+
+		#pragma omp task
+		MsSequential(array, tmp, !inplace, begin, half);
+		#pragma omp task
+		MsSequential(array, tmp, !inplace, half, end);
+		#pragma omp taskwait
 
 		if (inplace) {
 			MsMergeParallel(array, tmp, begin, half, half, end, begin);
