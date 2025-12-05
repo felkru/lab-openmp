@@ -2,16 +2,20 @@
 
 ## Todo List
 - [x] Parallel divide with tasks + cutoff
-    - [ ] determine best cutoff using binary search
+    - [x] determine best cutoff using ternary search
     - [ ] seperate MsSequential and MsParrallel to avoid cutoff checks 
-- [ ] Parallel merge via block binary search
-- [ ] SIMD in merge kernels
+- [x] Parallel merge via block binary search
+    - [x] determine the best cutoff here
+- [x] NUMA-local memory
+- [x] Replace the single-threaded sorts after the cutoff with a more efficient algorithm
 - [ ] Work-stealing / dynamic scheduling
+- [x] Reset to 23 iterations
+- [ ] SIMD in merge kernels
 - [ ] Cache-line aware output
-- [ ] NUMA-local memory
 - [ ] Pre-allocated temp buffer
 - [ ] Profile & tune threshold
-- [ ] Reset to 23 iterations
+
+Goal: 0,5s for large run
 
 ### Tools for profiling
 perf, vtune, gprof, TAU
@@ -79,3 +83,38 @@ done, took 11.134000 sec. Verification... successful.
 
 *Result:* Go with a cutoff of `20.000` for now.
 
+## Parrallel merge via binary search
+## Tuning Results
+
+(From now on all tests have been performed using quick-test.sh (96 cores, large problem))
+
+| Cutoff | Time (sec) |
+|--------|------------|
+| 250000 | 2.974000   |
+| 173333 | 2.984000   |
+| 100000 | 3.140000   |
+| 50000  | 3.272000   |
+
+## Numa-local memory
+
+```zsh
+done, took 1.337000 sec. Verification... successful.
+```
+
+## Replace single-threaded merge-sorts (after cutoff) with std::sort
+
+cutoff 30.000
+```zsh
+done, took 1.503000 sec. Verification... successful.
+```
+
+cutoff 5.000
+```zsh
+done, took 1.507000 sec. Verification... successful.
+```
+
+## Replace single-threaded merge-sorts with Radix Sort
+
+```zsh
+done, took  0.946 sec. Verification... successful.
+```

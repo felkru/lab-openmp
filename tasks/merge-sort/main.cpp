@@ -26,6 +26,8 @@
 #include <sys/time.h>
 
 #include <iostream>
+#include <chrono>
+#include <iomanip>
 #include <algorithm>
 
 #include <cstdlib>
@@ -36,6 +38,14 @@
 #include <cstring>
 
 
+
+auto start_time = std::chrono::high_resolution_clock::now();
+
+void print_timestamp(const char* label) {
+    auto now = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = now - start_time;
+    std::cout << "[PROFILE] " << std::fixed << std::setprecision(6) << elapsed.count() << "s: " << label << std::endl;
+}
 
 /**
   * helper routine: check if array is sorted correctly
@@ -82,30 +92,101 @@ void MsMergeSequential(int *out, int *in, long begin1, long end1, long begin2, l
 	}
 }
 
+/**
+  * parallel merge step
+  */
+void MsMergeParallel(int *out, int *in, long begin1, long end1, long begin2, long end2, long outBegin) {
+	long n1 = end1 - begin1;
+	long n2 = end2 - begin2;
+
+	if (n1 + n2 < 250000) {
+		MsMergeSequential(out, in, begin1, end1, begin2, end2, outBegin);
+		return;
+	}
+
+	if (n1 >= n2) {
+		long mid1 = (begin1 + end1) / 2;
+		long mid2 = std::lower_bound(in + begin2, in + end2, in[mid1]) - in;
+		long outMid = outBegin + (mid1 - begin1) + (mid2 - begin2);
+		out[outMid] = in[mid1];
+
+		#pragma omp task
+		MsMergeParallel(out, in, begin1, mid1, begin2, mid2, outBegin);
+		#pragma omp task
+		MsMergeParallel(out, in, mid1 + 1, end1, mid2, end2, outMid + 1);
+		#pragma omp taskwait
+	} else {
+		long mid2 = (begin2 + end2) / 2;
+		long mid1 = std::upper_bound(in + begin1, in + end1, in[mid2]) - in;
+		long outMid = outBegin + (mid1 - begin1) + (mid2 - begin2);
+		out[outMid] = in[mid2];
+
+		#pragma omp task
+		MsMergeParallel(out, in, begin1, mid1, begin2, mid2, outBegin);
+		#pragma omp task
+		MsMergeParallel(out, in, mid1, end1, mid2 + 1, end2, outMid + 1);
+		#pragma omp taskwait
+	}
+}
+
+/**
+  * sequential Sort
+  */
+void radixSort(int* arr, int* aux, long n) {
+	int count[256];
+	int* src = arr;
+	int* dst = aux;
+
+	for (int shift = 0; shift < 32; shift += 8) {
+		std::memset(count, 0, sizeof(count));
+		for (long i = 0; i < n; ++i) {
+			count[(src[i] >> shift) & 0xFF]++;
+		}
+		
+		int start = 0;
+		for (int i = 0; i < 256; ++i) {
+			int tmp = count[i];
+			count[i] = start;
+			start += tmp;
+		}
+
+		for (long i = 0; i < n; ++i) {
+			dst[count[(src[i] >> shift) & 0xFF]++] = src[i];
+		}
+
+		std::swap(src, dst);
+	}
+}
 
 /**
   * sequential MergeSort
   */
 void MsSequential(int *array, int *tmp, bool inplace, long begin, long end) {
 	if (begin < (end - 1)) {
-		const long half = (begin + end) / 2;
 		const long size = end - begin;
 
-		if (size >= 30389) { // task overhead is not worth it for small tasks
-			#pragma omp task
-			MsSequential(array, tmp, !inplace, begin, half);
-			#pragma omp task
-			MsSequential(array, tmp, !inplace, half, end);
-			#pragma omp taskwait
-		} else {
-			MsSequential(array, tmp, !inplace, begin, half);
-			MsSequential(array, tmp, !inplace, half, end);
+		if (size < 30000) {
+			if (inplace) {
+				radixSort(array + begin, tmp + begin, size);
+			} else {
+				std::copy(array + begin, array + end, tmp + begin);
+				radixSort(tmp + begin, array + begin, size);
+			}
+			return;
 		}
 
+		const long half = (begin + end) / 2;
+
+		#pragma omp task
+		MsSequential(array, tmp, !inplace, begin, half);
+		#pragma omp task
+		MsSequential(array, tmp, !inplace, half, end);
+		#pragma omp taskwait
+
 		if (inplace) {
-			MsMergeSequential(array, tmp, begin, half, half, end, begin);
+			MsMergeParallel(array, tmp, begin, half, half, end, begin);
 		} else {
-			MsMergeSequential(tmp, array, begin, half, half, end, begin);
+			MsMergeParallel(tmp, array, begin, half, half, end, begin);
 		}
 	} else if (!inplace) {
 		tmp[begin] = array[begin];
@@ -131,31 +212,37 @@ int main(int argc, char* argv[]) {
 	double etime;
 
 	// expect one command line arguments: array size
+    print_timestamp("Start of main");
 	if (argc != 2) {
 		printf("Usage: MergeSort.exe <array size> \n");
 		printf("\n");
 		return EXIT_FAILURE;
-	}
-	else {
+	} else {
 		const size_t stSize = strtol(argv[1], NULL, 10);
 		int *data = (int*) malloc(stSize * sizeof(int));
 		int *tmp = (int*) malloc(stSize * sizeof(int));
 		int *ref = (int*) malloc(stSize * sizeof(int));
+        print_timestamp("Memory allocated");
 
 		printf("Initialization...\n");
 
-		srand(95);
+		#pragma omp parallel for
 		for (size_t idx = 0; idx < stSize; ++idx){
-			data[idx] = (int) (stSize * (double(rand()) / RAND_MAX));
+			unsigned int seed = 95 + idx;
+			data[idx] = (int) (stSize * (double(rand_r(&seed)) / RAND_MAX));
 		}
+        print_timestamp("Data initialized");
 		std::copy(data, data + stSize, ref);
+        print_timestamp("Reference copy created");
 
 		double dSize = (stSize * sizeof(int)) / 1024 / 1024;
 		printf("Sorting %zu elements of type int (%f MiB)...\n", stSize, dSize);
 
+        print_timestamp("Before MsSerial");
 		gettimeofday(&t1, NULL);
 		MsSerial(data, tmp, stSize);
 		gettimeofday(&t2, NULL);
+        print_timestamp("After MsSerial");
 		etime = (t2.tv_sec - t1.tv_sec) * 1000 + (t2.tv_usec - t1.tv_usec) / 1000;
 		etime = etime / 1000;
 
@@ -166,11 +253,13 @@ int main(int argc, char* argv[]) {
 		else {
 			printf(" FAILED.\n");
 		}
+        print_timestamp("Verification complete");
 
 		free(data);
 		free(tmp);
 		free(ref);
 	}
+    print_timestamp("End of main");
 
 	return EXIT_SUCCESS;
 }

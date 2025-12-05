@@ -1,5 +1,11 @@
 # Getting started
 
+## Quick test
+
+```zsh
+./scripts/quick-test.sh large 1 96
+```
+
 ## Large Benchmark
 
 1. Run `sbatch ./scripts/batch/slurm.batch.gpu.sh` to collect benchmarks on 96 cores async. 

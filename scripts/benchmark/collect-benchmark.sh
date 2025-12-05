@@ -18,7 +18,7 @@ file_date() {
 # defaults for arguments
 task=merge-sort
 version=release
-num_executions=6
+num_executions=23
 
 usage() {
     echo "usage: collect-benchmark.sh [-t <task>] [-v <version>] [-n <num-executions>] [-h | --help]" 1>&2
