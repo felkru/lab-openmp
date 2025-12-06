@@ -118,3 +118,16 @@ done, took 1.507000 sec. Verification... successful.
 ```zsh
 done, took  0.946 sec. Verification... successful.
 ```
+
+## Branchless Merge + SIMD + Huge Pages
+
+- **Changes**:
+    - Branchless logic, removed `if/else`
+    - Switched to Intel Compiler (`icpc`)
+    - Added `#pragma ivdep` to the merge loop to enable vectorization.
+    - `Huge Pages` using `posix_memalign` (2MB) and `madvise`.
+- **Performance**:
+    - `Branchless + SIMD`: ~0.882s
+    - `Huge Pages`: ~0.85s
+
+

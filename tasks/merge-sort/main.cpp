@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <sys/time.h>
+#include <sys/mman.h>
 
 #include <iostream>
 #include <chrono>
@@ -40,6 +41,7 @@
 
 
 #include <parallel/algorithm>
+#include <immintrin.h>
 
 auto start_time = std::chrono::high_resolution_clock::now();
 
@@ -66,20 +68,22 @@ bool isSorted(int ref[], int data[], const size_t size){
 /**
   * sequential merge step (straight-forward implementation)
   */
-void MsMergeSequential(int *out, int *in, long begin1, long end1, long begin2, long end2, long outBegin) {
+void MsMergeSequential(int * __restrict__ out, const int * __restrict__ in, long begin1, long end1, long begin2, long end2, long outBegin) {
 	long left = begin1;
 	long right = begin2;
-
 	long idx = outBegin;
 
+	#pragma ivdep
 	while (left < end1 && right < end2) {
-		if (in[left] <= in[right]) {
-			out[idx] = in[left];
-			left++;
-		} else {
-			out[idx] = in[right];
-			right++;
-		}
+		_mm_prefetch((const char*)&in[left + 32], _MM_HINT_T0);
+		_mm_prefetch((const char*)&in[right + 32], _MM_HINT_T0);
+		int val1 = in[left];
+		int val2 = in[right];
+		long takeLeft = (val1 <= val2);
+		out[idx] = takeLeft ? val1 : val2;
+		left += takeLeft;
+		right += (1 - takeLeft);
+
 		idx++;
 	}
 
@@ -220,10 +224,16 @@ int main(int argc, char* argv[]) {
 		printf("\n");
 		return EXIT_FAILURE;
 	} else {
+// changes in main allocations
 		const size_t stSize = strtol(argv[1], NULL, 10);
-		int *data = (int*) malloc(stSize * sizeof(int));
-		int *tmp = (int*) malloc(stSize * sizeof(int));
-		int *ref = (int*) malloc(stSize * sizeof(int));
+		size_t bytes = stSize * sizeof(int);
+		int *data, *tmp, *ref;
+		posix_memalign((void**)&data, 2097152, bytes);
+		posix_memalign((void**)&tmp, 2097152, bytes);
+		posix_memalign((void**)&ref, 2097152, bytes);
+		madvise(data, bytes, MADV_HUGEPAGE);
+		madvise(tmp, bytes, MADV_HUGEPAGE);
+		madvise(ref, bytes, MADV_HUGEPAGE);
         print_timestamp("Memory allocated");
 
 		printf("Initialization...\n");

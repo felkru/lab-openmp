@@ -1,2 +1,2 @@
-export CXX=g++
-export FLAGS_OPENMP=-fopenmp
+# export CXX=g++
+# export FLAGS_OPENMP=-fopenmp
