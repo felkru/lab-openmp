@@ -1164,18 +1164,82 @@ Global optimization report for : _ZN14__gnu_parallel10_LoserTreeILb0EiSt4lessIiE
 
 Global optimization report for : _Z17MsMergeSequentialPiPKilllll
 
-LOOP BEGIN at main.cpp (76, 2)
+LOOP BEGIN at main.cpp (116, 9)
+    remark #15344: Loop was not vectorized: vector dependence prevents vectorization
+    remark #15346: vector dependence: assumed FLOW dependence between left [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (122, 22) ] and left [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (117, 24) ] 
+    remark #15346: vector dependence: assumed FLOW dependence between left [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (122, 22) ] and left [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (122, 22) ] 
+    remark #15346: vector dependence: assumed FLOW dependence between right [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (123, 23) ] and right [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (118, 24) ] 
+    remark #15346: vector dependence: assumed FLOW dependence between right [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (123, 23) ] and right [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (123, 23) ] 
+    remark #25436: Loop completely unrolled by 16
+LOOP END
+
+LOOP BEGIN at main.cpp (161, 2)
+<Multiversioned v1>
+    remark #25399: memcopy generated
+    remark #25562: The loop has been multiversioned for the small trip count
+    remark #25260: Dead loop optimized away
+LOOP END
+
+LOOP BEGIN at main.cpp (166, 2)
+<Multiversioned v1>
+    remark #25399: memcopy generated
+    remark #25562: The loop has been multiversioned for the small trip count
+    remark #25260: Dead loop optimized away
+LOOP END
+
+LOOP BEGIN at main.cpp (78, 5)
     remark #15521: Loop was not vectorized: loop control variable was not identified. Explicitly compute the iteration count before executing the loop or try using canonical loop form from OpenMP specification
+LOOP END
+
+LOOP BEGIN at main.cpp (110, 5)
+LOOP END
+
+LOOP BEGIN at main.cpp (141, 2)
+    remark #15521: Loop was not vectorized: loop control variable was not identified. Explicitly compute the iteration count before executing the loop or try using canonical loop form from OpenMP specification
+LOOP END
+
+LOOP BEGIN at main.cpp (161, 2)
+    remark #15300: LOOP WAS VECTORIZED
+    remark #15305: vectorization support: vector length 16
+    remark #15389: vectorization support: masked unaligned unit stride load: in [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (162, 36) ] 
+    remark #15389: vectorization support: masked unaligned unit stride store: out [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (162, 26) ] 
+    remark #15475: --- begin vector loop cost summary ---
+    remark #15476: scalar cost: 6.000000 
+    remark #15477: vector cost: 1.000000 
+    remark #15478: estimated potential speedup: 3.578125 
+    remark #15309: vectorization support: normalized vectorization overhead 4.000000
+    remark #15488: --- end vector loop cost summary ---
+    remark #15447: --- begin vector loop memory reference summary ---
+    remark #15456: masked unaligned unit stride loads: 1 
+    remark #15457: masked unaligned unit stride stores: 1 
+    remark #15474: --- end vector loop memory reference summary ---
+LOOP END
+
+LOOP BEGIN at main.cpp (166, 2)
+    remark #15300: LOOP WAS VECTORIZED
+    remark #15305: vectorization support: vector length 16
+    remark #15389: vectorization support: masked unaligned unit stride load: in [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (167, 36) ] 
+    remark #15389: vectorization support: masked unaligned unit stride store: out [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (167, 26) ] 
+    remark #15475: --- begin vector loop cost summary ---
+    remark #15476: scalar cost: 6.000000 
+    remark #15477: vector cost: 1.000000 
+    remark #15478: estimated potential speedup: 3.578125 
+    remark #15309: vectorization support: normalized vectorization overhead 4.000000
+    remark #15488: --- end vector loop cost summary ---
+    remark #15447: --- begin vector loop memory reference summary ---
+    remark #15456: masked unaligned unit stride loads: 1 
+    remark #15457: masked unaligned unit stride stores: 1 
+    remark #15474: --- end vector loop memory reference summary ---
 LOOP END
 =================================================================
 
 Global optimization report for : _Z15MsMergeParallelPiS_lllll
 
-OMP TASKWAIT BEGIN at main.cpp (128, 3)
+OMP TASKWAIT BEGIN at main.cpp (194, 3)
     remark #30008: taskwait construct transformed
 OMP TASKWAIT END
 
-OMP TASKWAIT BEGIN at main.cpp (139, 3)
+OMP TASKWAIT BEGIN at main.cpp (205, 3)
     remark #30008: taskwait construct transformed
 OMP TASKWAIT END
 
@@ -1186,58 +1250,54 @@ LOOP END
 LOOP BEGIN at /cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/GCCcore/13.3.0/lib/gcc/x86_64-pc-linux-gnu/13.3.0/../../../../include/c++/13.3.0/bits/stl_algo.h (2030, 7)
     remark #15521: Loop was not vectorized: loop control variable was not identified. Explicitly compute the iteration count before executing the loop or try using canonical loop form from OpenMP specification
 LOOP END
-
-LOOP BEGIN at main.cpp (76, 2)
-    remark #15521: Loop was not vectorized: loop control variable was not identified. Explicitly compute the iteration count before executing the loop or try using canonical loop form from OpenMP specification
-LOOP END
 =================================================================
 
 Global optimization report for : _Z9radixSortPiS_l
 
-LOOP BEGIN at main.cpp (151, 2)
+LOOP BEGIN at main.cpp (217, 2)
     remark #25452: Poor spatial locality detected in memref(s). 
     remark #25445: Loop interchange not done due to: non-perfect loopnest
     remark #25451: Advice: Loop interchange, if possible, might help loopnest. Suggested Permutation: ( 1 2 ) --> ( 2 1 )
     remark #15541: loop was not vectorized: outer loop is not an auto-vectorization candidate.
 
-    LOOP BEGIN at main.cpp (158, 3)
+    LOOP BEGIN at main.cpp (224, 3)
         remark #15344: Loop was not vectorized: vector dependence prevents vectorization
-        remark #15346: vector dependence: assumed FLOW dependence between start [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (161, 10) ] and start [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (160, 13) ] 
-        remark #15346: vector dependence: assumed FLOW dependence between start [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (161, 10) ] and start [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (161, 10) ] 
+        remark #15346: vector dependence: assumed FLOW dependence between start [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (227, 10) ] and start [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (226, 13) ] 
+        remark #15346: vector dependence: assumed FLOW dependence between start [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (227, 10) ] and start [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (227, 10) ] 
         remark #25438: Loop unrolled without remainder by 8
     LOOP END
 LOOP END
 
-LOOP BEGIN at main.cpp (151, 2)
+LOOP BEGIN at main.cpp (217, 2)
     remark #15541: loop was not vectorized: outer loop is not an auto-vectorization candidate.
 
-    LOOP BEGIN at main.cpp (153, 3)
+    LOOP BEGIN at main.cpp (219, 3)
         remark #25238: Advice: Runtime dependence checking cannot be applied. Try using the restrict keyword if applicable to indicate there is no data dependence, or try adding OMP SIMD pragma to forcefully vectorize the loop.
         remark #15335: loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
         remark #25439: Loop unrolled with remainder by 8
     LOOP END
 
-    LOOP BEGIN at main.cpp (153, 3)
+    LOOP BEGIN at main.cpp (219, 3)
     <Remainder loop>
     LOOP END
 
-    LOOP BEGIN at main.cpp (158, 3)
+    LOOP BEGIN at main.cpp (224, 3)
         remark #15344: Loop was not vectorized: vector dependence prevents vectorization
-        remark #15346: vector dependence: assumed FLOW dependence between start [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (161, 10) ] and start [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (160, 13) ] 
-        remark #15346: vector dependence: assumed FLOW dependence between start [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (161, 10) ] and start [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (161, 10) ] 
+        remark #15346: vector dependence: assumed FLOW dependence between start [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (227, 10) ] and start [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (226, 13) ] 
+        remark #15346: vector dependence: assumed FLOW dependence between start [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (227, 10) ] and start [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (227, 10) ] 
         remark #25438: Loop unrolled without remainder by 8
     LOOP END
 
-    LOOP BEGIN at main.cpp (164, 3)
+    LOOP BEGIN at main.cpp (230, 3)
         remark #25238: Advice: Runtime dependence checking cannot be applied. Try using the restrict keyword if applicable to indicate there is no data dependence, or try adding OMP SIMD pragma to forcefully vectorize the loop.
         remark #15344: Loop was not vectorized: vector dependence prevents vectorization
-        remark #15346: vector dependence: assumed FLOW dependence between dst [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (165, 4) ] and src src [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (165, 45) ] 
-        remark #15346: vector dependence: assumed FLOW dependence between dst [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (165, 4) ] and count [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (165, 39) ] 
-        remark #15346: vector dependence: assumed OUTPUT dependence between dst [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (165, 4) ] and count [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (165, 8) ] 
+        remark #15346: vector dependence: assumed FLOW dependence between dst [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (231, 4) ] and src src [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (231, 45) ] 
+        remark #15346: vector dependence: assumed FLOW dependence between dst [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (231, 4) ] and count [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (231, 39) ] 
+        remark #15346: vector dependence: assumed OUTPUT dependence between dst [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (231, 4) ] and count [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (231, 8) ] 
         remark #25439: Loop unrolled with remainder by 4
     LOOP END
 
-    LOOP BEGIN at main.cpp (164, 3)
+    LOOP BEGIN at main.cpp (230, 3)
     <Remainder loop>
     LOOP END
 LOOP END
@@ -1245,102 +1305,102 @@ LOOP END
 
 Global optimization report for : _Z12MsSequentialPiS_bll
 
-OMP TASKWAIT BEGIN at main.cpp (195, 3)
+OMP TASKWAIT BEGIN at main.cpp (261, 3)
     remark #30008: taskwait construct transformed
 OMP TASKWAIT END
 
-LOOP BEGIN at main.cpp (151, 2)
+LOOP BEGIN at main.cpp (217, 2)
     remark #25452: Poor spatial locality detected in memref(s). 
     remark #25445: Loop interchange not done due to: non-perfect loopnest
     remark #25451: Advice: Loop interchange, if possible, might help loopnest. Suggested Permutation: ( 1 2 ) --> ( 2 1 )
     remark #15541: loop was not vectorized: outer loop is not an auto-vectorization candidate.
 
-    LOOP BEGIN at main.cpp (158, 3)
+    LOOP BEGIN at main.cpp (224, 3)
         remark #15344: Loop was not vectorized: vector dependence prevents vectorization
-        remark #15346: vector dependence: assumed FLOW dependence between start [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (161, 10) ] and start [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (160, 13) ] 
-        remark #15346: vector dependence: assumed FLOW dependence between start [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (161, 10) ] and start [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (161, 10) ] 
+        remark #15346: vector dependence: assumed FLOW dependence between start [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (227, 10) ] and start [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (226, 13) ] 
+        remark #15346: vector dependence: assumed FLOW dependence between start [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (227, 10) ] and start [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (227, 10) ] 
         remark #25438: Loop unrolled without remainder by 8
     LOOP END
 LOOP END
 
-LOOP BEGIN at main.cpp (151, 2)
+LOOP BEGIN at main.cpp (217, 2)
     remark #15541: loop was not vectorized: outer loop is not an auto-vectorization candidate.
 
-    LOOP BEGIN at main.cpp (153, 3)
+    LOOP BEGIN at main.cpp (219, 3)
         remark #25238: Advice: Runtime dependence checking cannot be applied. Try using the restrict keyword if applicable to indicate there is no data dependence, or try adding OMP SIMD pragma to forcefully vectorize the loop.
         remark #15335: loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
         remark #25439: Loop unrolled with remainder by 8
     LOOP END
 
-    LOOP BEGIN at main.cpp (153, 3)
+    LOOP BEGIN at main.cpp (219, 3)
     <Remainder loop>
     LOOP END
 
-    LOOP BEGIN at main.cpp (158, 3)
+    LOOP BEGIN at main.cpp (224, 3)
         remark #15344: Loop was not vectorized: vector dependence prevents vectorization
-        remark #15346: vector dependence: assumed FLOW dependence between start [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (161, 10) ] and start [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (160, 13) ] 
-        remark #15346: vector dependence: assumed FLOW dependence between start [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (161, 10) ] and start [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (161, 10) ] 
+        remark #15346: vector dependence: assumed FLOW dependence between start [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (227, 10) ] and start [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (226, 13) ] 
+        remark #15346: vector dependence: assumed FLOW dependence between start [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (227, 10) ] and start [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (227, 10) ] 
         remark #25438: Loop unrolled without remainder by 8
     LOOP END
 
-    LOOP BEGIN at main.cpp (164, 3)
+    LOOP BEGIN at main.cpp (230, 3)
         remark #25238: Advice: Runtime dependence checking cannot be applied. Try using the restrict keyword if applicable to indicate there is no data dependence, or try adding OMP SIMD pragma to forcefully vectorize the loop.
         remark #15344: Loop was not vectorized: vector dependence prevents vectorization
-        remark #15346: vector dependence: assumed FLOW dependence between dst [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (165, 4) ] and src src [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (165, 45) ] 
-        remark #15346: vector dependence: assumed FLOW dependence between dst [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (165, 4) ] and count [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (165, 39) ] 
-        remark #15346: vector dependence: assumed OUTPUT dependence between dst [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (165, 4) ] and count [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (165, 8) ] 
+        remark #15346: vector dependence: assumed FLOW dependence between dst [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (231, 4) ] and src src [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (231, 45) ] 
+        remark #15346: vector dependence: assumed FLOW dependence between dst [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (231, 4) ] and count [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (231, 39) ] 
+        remark #15346: vector dependence: assumed OUTPUT dependence between dst [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (231, 4) ] and count [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (231, 8) ] 
         remark #25439: Loop unrolled with remainder by 4
     LOOP END
 
-    LOOP BEGIN at main.cpp (164, 3)
+    LOOP BEGIN at main.cpp (230, 3)
     <Remainder loop>
     LOOP END
 LOOP END
 
-LOOP BEGIN at main.cpp (151, 2)
+LOOP BEGIN at main.cpp (217, 2)
     remark #25452: Poor spatial locality detected in memref(s). 
     remark #25445: Loop interchange not done due to: non-perfect loopnest
     remark #25451: Advice: Loop interchange, if possible, might help loopnest. Suggested Permutation: ( 1 2 ) --> ( 2 1 )
     remark #15541: loop was not vectorized: outer loop is not an auto-vectorization candidate.
 
-    LOOP BEGIN at main.cpp (158, 3)
+    LOOP BEGIN at main.cpp (224, 3)
         remark #15344: Loop was not vectorized: vector dependence prevents vectorization
-        remark #15346: vector dependence: assumed FLOW dependence between start [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (161, 10) ] and start [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (160, 13) ] 
-        remark #15346: vector dependence: assumed FLOW dependence between start [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (161, 10) ] and start [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (161, 10) ] 
+        remark #15346: vector dependence: assumed FLOW dependence between start [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (227, 10) ] and start [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (226, 13) ] 
+        remark #15346: vector dependence: assumed FLOW dependence between start [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (227, 10) ] and start [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (227, 10) ] 
         remark #25438: Loop unrolled without remainder by 8
     LOOP END
 LOOP END
 
-LOOP BEGIN at main.cpp (151, 2)
+LOOP BEGIN at main.cpp (217, 2)
     remark #15541: loop was not vectorized: outer loop is not an auto-vectorization candidate.
 
-    LOOP BEGIN at main.cpp (153, 3)
+    LOOP BEGIN at main.cpp (219, 3)
         remark #25238: Advice: Runtime dependence checking cannot be applied. Try using the restrict keyword if applicable to indicate there is no data dependence, or try adding OMP SIMD pragma to forcefully vectorize the loop.
         remark #15335: loop was not vectorized: vectorization possible but seems inefficient. Use vector always directive or -vec-threshold0 to override 
         remark #25439: Loop unrolled with remainder by 8
     LOOP END
 
-    LOOP BEGIN at main.cpp (153, 3)
+    LOOP BEGIN at main.cpp (219, 3)
     <Remainder loop>
     LOOP END
 
-    LOOP BEGIN at main.cpp (158, 3)
+    LOOP BEGIN at main.cpp (224, 3)
         remark #15344: Loop was not vectorized: vector dependence prevents vectorization
-        remark #15346: vector dependence: assumed FLOW dependence between start [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (161, 10) ] and start [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (160, 13) ] 
-        remark #15346: vector dependence: assumed FLOW dependence between start [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (161, 10) ] and start [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (161, 10) ] 
+        remark #15346: vector dependence: assumed FLOW dependence between start [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (227, 10) ] and start [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (226, 13) ] 
+        remark #15346: vector dependence: assumed FLOW dependence between start [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (227, 10) ] and start [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (227, 10) ] 
         remark #25438: Loop unrolled without remainder by 8
     LOOP END
 
-    LOOP BEGIN at main.cpp (164, 3)
+    LOOP BEGIN at main.cpp (230, 3)
         remark #25238: Advice: Runtime dependence checking cannot be applied. Try using the restrict keyword if applicable to indicate there is no data dependence, or try adding OMP SIMD pragma to forcefully vectorize the loop.
         remark #15344: Loop was not vectorized: vector dependence prevents vectorization
-        remark #15346: vector dependence: assumed FLOW dependence between dst [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (165, 4) ] and src src [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (165, 45) ] 
-        remark #15346: vector dependence: assumed FLOW dependence between dst [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (165, 4) ] and count [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (165, 39) ] 
-        remark #15346: vector dependence: assumed OUTPUT dependence between dst [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (165, 4) ] and count [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (165, 8) ] 
+        remark #15346: vector dependence: assumed FLOW dependence between dst [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (231, 4) ] and src src [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (231, 45) ] 
+        remark #15346: vector dependence: assumed FLOW dependence between dst [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (231, 4) ] and count [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (231, 39) ] 
+        remark #15346: vector dependence: assumed OUTPUT dependence between dst [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (231, 4) ] and count [ /home/ey626511/lab-openmp/tasks/merge-sort/main.cpp (231, 8) ] 
         remark #25439: Loop unrolled with remainder by 4
     LOOP END
 
-    LOOP BEGIN at main.cpp (164, 3)
+    LOOP BEGIN at main.cpp (230, 3)
     <Remainder loop>
     LOOP END
 LOOP END
@@ -1415,52 +1475,52 @@ LOOP END
 
 Global optimization report for : _Z15MsMergeParallelPiS_lllll.extracted
 
-OMP TASK BEGIN at main.cpp (124, 3)
+OMP TASK BEGIN at main.cpp (190, 3)
     remark #30008: task construct transformed
 OMP TASK END
 =================================================================
 
-Global optimization report for : _Z15MsMergeParallelPiS_lllll.extracted.35
+Global optimization report for : _Z15MsMergeParallelPiS_lllll.extracted.36
 
-OMP TASK BEGIN at main.cpp (126, 3)
+OMP TASK BEGIN at main.cpp (192, 3)
     remark #30008: task construct transformed
 OMP TASK END
 =================================================================
 
-Global optimization report for : _Z15MsMergeParallelPiS_lllll.extracted.38
+Global optimization report for : _Z15MsMergeParallelPiS_lllll.extracted.39
 
-OMP TASK BEGIN at main.cpp (135, 3)
+OMP TASK BEGIN at main.cpp (201, 3)
     remark #30008: task construct transformed
 OMP TASK END
 =================================================================
 
-Global optimization report for : _Z15MsMergeParallelPiS_lllll.extracted.41
+Global optimization report for : _Z15MsMergeParallelPiS_lllll.extracted.42
 
-OMP TASK BEGIN at main.cpp (137, 3)
+OMP TASK BEGIN at main.cpp (203, 3)
     remark #30008: task construct transformed
 OMP TASK END
 =================================================================
 
 Global optimization report for : _Z12MsSequentialPiS_bll.extracted
 
-OMP TASK BEGIN at main.cpp (191, 3)
+OMP TASK BEGIN at main.cpp (257, 3)
     remark #30008: task construct transformed
 OMP TASK END
 =================================================================
 
-Global optimization report for : _Z12MsSequentialPiS_bll.extracted.46
+Global optimization report for : _Z12MsSequentialPiS_bll.extracted.47
 
-OMP TASK BEGIN at main.cpp (193, 3)
+OMP TASK BEGIN at main.cpp (259, 3)
     remark #30008: task construct transformed
 OMP TASK END
 =================================================================
 
 Global optimization report for : _Z8MsSerialPiS_m.extracted
 
-OMP PARALLEL BEGIN at main.cpp (211, 2)
+OMP PARALLEL BEGIN at main.cpp (277, 2)
     remark #30008: parallel construct transformed
 
-    OMP SINGLE BEGIN at main.cpp (212, 2)
+    OMP SINGLE BEGIN at main.cpp (278, 2)
         remark #30008: single construct transformed
     OMP SINGLE END
 OMP PARALLEL END
@@ -1468,14 +1528,21 @@ OMP PARALLEL END
 
 Global optimization report for : main.extracted
 
-OMP PARALLEL FOR BEGIN at main.cpp (252, 3)
+OMP PARALLEL FOR BEGIN at main.cpp (318, 3)
     remark #30008: parallel loop construct transformed
 OMP PARALLEL FOR END
 
-LOOP BEGIN at main.cpp (252, 3)
+LOOP BEGIN at main.cpp (318, 3)
     remark #30000: OpenMP: Outlined parallel loop
     remark #15521: Loop was not vectorized: loop control variable was not identified. Explicitly compute the iteration count before executing the loop or try using canonical loop form from OpenMP specification
 LOOP END
+=================================================================
+
+Global optimization report for : main.extracted.56
+
+OMP PARALLEL FOR BEGIN at main.cpp (332, 9)
+    remark #30008: parallel loop construct transformed
+OMP PARALLEL FOR END
 =================================================================
 
 ---- Begin Inlining Report ----
@@ -1484,6 +1551,12 @@ Option Values:
   inlinehint-threshold: 325
   inlinecold-threshold: 45
   inlineoptsize-threshold: 15
+
+DEAD STATIC FUNC: _ZL15_mm_stream_si32Pvi
+
+DEAD STATIC FUNC: _ZL17_mm512_load_si512PKv
+
+DEAD STATIC FUNC: _ZL19_mm512_stream_si512PvDv8_x
 
 DEAD STATIC FUNC: _ZN14__gnu_parallel10_LoserTreeILb0EiSt4lessIiEE19__delete_min_insertEib
 
@@ -2328,6 +2401,8 @@ DEAD STATIC FUNC: __cxx_global_var_init
 DEAD STATIC FUNC: llvm.directive.region.entry
 
 DEAD STATIC FUNC: llvm.directive.region.exit
+
+DEAD STATIC FUNC: llvm.experimental.noalias.scope.decl
 
 DEAD STATIC FUNC: llvm.intel.fakeload.p0
 
@@ -4096,10 +4171,10 @@ COMPILE FUNC: _ZN14__gnu_parallel25multiway_merge_loser_treeINS_10_LoserTreeILb0
    -> llvm.ctlz.i32 main.cpp (105,34)
 
 COMPILE FUNC: _Z15MsMergeParallelPiS_lllll
-   -> DELETE: llvm.directive.region.entry main.cpp (139,3)
-   -> DELETE: llvm.directive.region.entry main.cpp (128,3)
-   -> INLINE: _Z17MsMergeSequentialPiPKilllll main.cpp (114,3) (70<=250)
-   -> INLINE: _ZSt11lower_boundIPiiET_S1_S1_RKT0_ main.cpp (120,15) (-14980<=325)
+   -> DELETE: llvm.directive.region.entry main.cpp (205,3)
+   -> DELETE: llvm.directive.region.entry main.cpp (194,3)
+   -> _Z17MsMergeSequentialPiPKilllll main.cpp (180,3) (385>250)
+   -> INLINE: _ZSt11lower_boundIPiiET_S1_S1_RKT0_ main.cpp (186,15) (-14980<=325)
       -> INLINE: _ZN9__gnu_cxx5__ops15__iter_less_valEv main.cpp (1508,5) (-15030<=487)
       -> INLINE: _ZSt13__lower_boundIPiiN9__gnu_cxx5__ops14_Iter_less_valEET_S4_S4_RKT0_T1_ main.cpp (1507,14) (-14935<=250)
          -> INLINE: _ZSt8distanceIPiENSt15iterator_traitsIT_E15difference_typeES2_S2_ main.cpp (1465,29)
@@ -4111,8 +4186,8 @@ COMPILE FUNC: _Z15MsMergeParallelPiS_lllll
                -> DELETE: llvm.is.constant.i64 main.cpp (190,11)
                -> DELETE: llvm.is.constant.i64 main.cpp (192,16)
          -> INLINE: _ZNK9__gnu_cxx5__ops14_Iter_less_valclIPiKiEEbT_RT0_ main.cpp (1472,8) (-15030<=375)
-   -> DELETE: llvm.directive.region.exit main.cpp (128,3)
-   -> INLINE: _ZSt11upper_boundIPiiET_S1_S1_RKT0_ main.cpp (131,15) (-14980<=325)
+   -> DELETE: llvm.directive.region.exit main.cpp (194,3)
+   -> INLINE: _ZSt11upper_boundIPiiET_S1_S1_RKT0_ main.cpp (197,15) (-14980<=325)
       -> INLINE: _ZN9__gnu_cxx5__ops15__val_less_iterEv main.cpp (2071,5) (-15030<=487)
       -> INLINE: _ZSt13__upper_boundIPiiN9__gnu_cxx5__ops14_Val_less_iterEET_S4_S4_RKT0_T1_ main.cpp (2070,14) (-14935<=250)
          -> INLINE: _ZSt8distanceIPiENSt15iterator_traitsIT_E15difference_typeES2_S2_ main.cpp (2028,29)
@@ -4124,33 +4199,28 @@ COMPILE FUNC: _Z15MsMergeParallelPiS_lllll
                -> DELETE: llvm.is.constant.i64 main.cpp (190,11)
                -> DELETE: llvm.is.constant.i64 main.cpp (192,16)
          -> INLINE: _ZNK9__gnu_cxx5__ops14_Val_less_iterclIKiPiEEbRT_T0_ main.cpp (2035,8) (-15030<=375)
-   -> DELETE: llvm.directive.region.exit main.cpp (139,3)
-   -> llvm.experimental.noalias.scope.decl main.cpp (114,3)
-   -> llvm.experimental.noalias.scope.decl main.cpp (114,3)
-   -> BROKER: __kmpc_omp_task_alloc main.cpp (124,3)(_Z15MsMergeParallelPiS_lllll.extracted)
+   -> DELETE: llvm.directive.region.exit main.cpp (205,3)
+   -> BROKER: __kmpc_omp_task_alloc main.cpp (190,3)(_Z15MsMergeParallelPiS_lllll.extracted)
    -> EXTERN: __kmpc_omp_task main.cpp
-   -> BROKER: __kmpc_omp_task_alloc main.cpp (126,3)(_Z15MsMergeParallelPiS_lllll.extracted.35)
+   -> BROKER: __kmpc_omp_task_alloc main.cpp (192,3)(_Z15MsMergeParallelPiS_lllll.extracted.36)
    -> EXTERN: __kmpc_omp_task main.cpp
    -> EXTERN: __kmpc_omp_taskwait main.cpp
-   -> BROKER: __kmpc_omp_task_alloc main.cpp (135,3)(_Z15MsMergeParallelPiS_lllll.extracted.38)
+   -> BROKER: __kmpc_omp_task_alloc main.cpp (201,3)(_Z15MsMergeParallelPiS_lllll.extracted.39)
    -> EXTERN: __kmpc_omp_task main.cpp
-   -> BROKER: __kmpc_omp_task_alloc main.cpp (137,3)(_Z15MsMergeParallelPiS_lllll.extracted.41)
+   -> BROKER: __kmpc_omp_task_alloc main.cpp (203,3)(_Z15MsMergeParallelPiS_lllll.extracted.42)
    -> EXTERN: __kmpc_global_thread_num main.cpp
    -> EXTERN: __kmpc_omp_task main.cpp
    -> EXTERN: __kmpc_omp_taskwait main.cpp
-   -> llvm.memcpy.p0.p0.i64 main.cpp (96,12)
-   -> llvm.smin.i32 main.cpp (81,15)
-   -> llvm.memcpy.p0.p0.i64 main.cpp (101,12)
 
 COMPILE FUNC: _Z12MsSequentialPiS_bll
-   -> DELETE: llvm.directive.region.entry main.cpp (195,3)
-   -> INLINE: _Z9radixSortPiS_l main.cpp (181,5) (165<=250)
-      -> DELETE: llvm.memset.p0.i64 main.cpp (152,3)
-      -> INLINE: _ZSt4swapIPiENSt9enable_ifIXsr6__and_ISt6__not_ISt15__is_tuple_likeIT_EESt21is_move_constructibleIS4_ESt18is_move_assignableIS4_EEE5valueEvE4typeERS4_SD_ main.cpp (168,3) (-15040<=487)
-      -> DELETE: llvm.memset.p0.i64 main.cpp (152,3)
-      -> llvm.memset.p0.i64 main.cpp (152,3)
-      -> llvm.memset.p0.i64 main.cpp (152,3)
-   -> INLINE: _ZSt4copyIPiS0_ET0_T_S2_S1_ main.cpp (183,5) (0<=675)
+   -> DELETE: llvm.directive.region.entry main.cpp (261,3)
+   -> INLINE: _Z9radixSortPiS_l main.cpp (247,5) (165<=250)
+      -> DELETE: llvm.memset.p0.i64 main.cpp (218,3)
+      -> INLINE: _ZSt4swapIPiENSt9enable_ifIXsr6__and_ISt6__not_ISt15__is_tuple_likeIT_EESt21is_move_constructibleIS4_ESt18is_move_assignableIS4_EEE5valueEvE4typeERS4_SD_ main.cpp (234,3) (-15040<=487)
+      -> DELETE: llvm.memset.p0.i64 main.cpp (218,3)
+      -> llvm.memset.p0.i64 main.cpp (218,3)
+      -> llvm.memset.p0.i64 main.cpp (218,3)
+   -> INLINE: _ZSt4copyIPiS0_ET0_T_S2_S1_ main.cpp (249,5) (0<=675)
       -> INLINE: _ZSt12__miter_baseIPiET_S1_ main.cpp (633,8) (-35<=487)
       -> INLINE: _ZSt12__miter_baseIPiET_S1_ main.cpp (633,36) (-35<=487)
       -> INLINE: _ZSt13__copy_move_aILb0EPiS0_ET1_T0_S2_S1_ main.cpp (632,14) (-15000<=325)
@@ -4163,77 +4233,80 @@ COMPILE FUNC: _Z12MsSequentialPiS_bll
                   -> llvm.memmove.p0.p0.i64 main.cpp (437,6)
                   -> INLINE: _ZNSt11__copy_moveILb0ELb0ESt26random_access_iterator_tagE12__assign_oneIiiEEvPT_PT0_ main.cpp (439,6) (-30<=45)
          -> INLINE: _ZSt12__niter_wrapIPiET_RKS1_S1_ main.cpp (540,14) (-40<=1012)
-   -> INLINE: _Z9radixSortPiS_l main.cpp (184,5) (165<=250)
-      -> DELETE: llvm.memset.p0.i64 main.cpp (152,3)
-      -> INLINE: _ZSt4swapIPiENSt9enable_ifIXsr6__and_ISt6__not_ISt15__is_tuple_likeIT_EESt21is_move_constructibleIS4_ESt18is_move_assignableIS4_EEE5valueEvE4typeERS4_SD_ main.cpp (168,3) (-15040<=487)
-      -> DELETE: llvm.memset.p0.i64 main.cpp (152,3)
-      -> llvm.memset.p0.i64 main.cpp (152,3)
-      -> llvm.memset.p0.i64 main.cpp (152,3)
-   -> DELETE: llvm.directive.region.exit main.cpp (195,3)
-   -> _Z15MsMergeParallelPiS_lllll main.cpp (198,4) (1060>250 [EE:625>625])
-   -> _Z15MsMergeParallelPiS_lllll main.cpp (200,4) (1060>250 [EE:625>625])
-   -> BROKER: __kmpc_omp_task_alloc main.cpp (191,3)(_Z12MsSequentialPiS_bll.extracted)
+   -> INLINE: _Z9radixSortPiS_l main.cpp (250,5) (165<=250)
+      -> DELETE: llvm.memset.p0.i64 main.cpp (218,3)
+      -> INLINE: _ZSt4swapIPiENSt9enable_ifIXsr6__and_ISt6__not_ISt15__is_tuple_likeIT_EESt21is_move_constructibleIS4_ESt18is_move_assignableIS4_EEE5valueEvE4typeERS4_SD_ main.cpp (234,3) (-15040<=487)
+      -> DELETE: llvm.memset.p0.i64 main.cpp (218,3)
+      -> llvm.memset.p0.i64 main.cpp (218,3)
+      -> llvm.memset.p0.i64 main.cpp (218,3)
+   -> DELETE: llvm.directive.region.exit main.cpp (261,3)
+   -> _Z15MsMergeParallelPiS_lllll main.cpp (264,4) (950>250 [EE:625>625])
+   -> _Z15MsMergeParallelPiS_lllll main.cpp (266,4) (950>250 [EE:625>625])
+   -> BROKER: __kmpc_omp_task_alloc main.cpp (257,3)(_Z12MsSequentialPiS_bll.extracted)
    -> EXTERN: __kmpc_omp_task main.cpp
-   -> BROKER: __kmpc_omp_task_alloc main.cpp (193,3)(_Z12MsSequentialPiS_bll.extracted.46)
+   -> BROKER: __kmpc_omp_task_alloc main.cpp (259,3)(_Z12MsSequentialPiS_bll.extracted.47)
    -> EXTERN: __kmpc_global_thread_num main.cpp
    -> EXTERN: __kmpc_omp_task main.cpp
    -> EXTERN: __kmpc_omp_taskwait main.cpp
    -> DELETE: llvm.ssa.copy.p0 main.cpp
    -> DELETE: llvm.ssa.copy.i64 main.cpp
-   -> DELETE: llvm.ssa.copy.i64 main.cpp (164,27)
-   -> DELETE: llvm.ssa.copy.i64 main.cpp (158,28)
+   -> DELETE: llvm.ssa.copy.i64 main.cpp (230,27)
+   -> DELETE: llvm.ssa.copy.i64 main.cpp (224,28)
    -> DELETE: llvm.ssa.copy.i64 main.cpp
-   -> DELETE: llvm.ssa.copy.i64 main.cpp (153,27)
-   -> DELETE: llvm.ssa.copy.i64 main.cpp
-   -> DELETE: llvm.ssa.copy.i32 main.cpp
-   -> DELETE: llvm.ssa.copy.p0 main.cpp
-   -> DELETE: llvm.ssa.copy.p0 main.cpp
-   -> DELETE: llvm.ssa.copy.i32 main.cpp (151,40)
-   -> DELETE: llvm.ssa.copy.i64 main.cpp
-   -> DELETE: llvm.ssa.copy.i32 main.cpp
-   -> DELETE: llvm.ssa.copy.i32 main.cpp (151,40)
-   -> DELETE: llvm.ssa.copy.i64 main.cpp (158,28)
-   -> DELETE: llvm.ssa.copy.p0 main.cpp
-   -> DELETE: llvm.ssa.copy.i64 main.cpp
-   -> DELETE: llvm.ssa.copy.i64 main.cpp (164,27)
-   -> DELETE: llvm.ssa.copy.i64 main.cpp (158,28)
-   -> DELETE: llvm.ssa.copy.i64 main.cpp
-   -> DELETE: llvm.ssa.copy.i64 main.cpp (153,27)
+   -> DELETE: llvm.ssa.copy.i64 main.cpp (219,27)
    -> DELETE: llvm.ssa.copy.i64 main.cpp
    -> DELETE: llvm.ssa.copy.i32 main.cpp
    -> DELETE: llvm.ssa.copy.p0 main.cpp
    -> DELETE: llvm.ssa.copy.p0 main.cpp
-   -> DELETE: llvm.ssa.copy.i32 main.cpp (151,40)
+   -> DELETE: llvm.ssa.copy.i32 main.cpp (217,40)
    -> DELETE: llvm.ssa.copy.i64 main.cpp
    -> DELETE: llvm.ssa.copy.i32 main.cpp
-   -> DELETE: llvm.ssa.copy.i32 main.cpp (151,40)
-   -> DELETE: llvm.ssa.copy.i64 main.cpp (158,28)
+   -> DELETE: llvm.ssa.copy.i32 main.cpp (217,40)
+   -> DELETE: llvm.ssa.copy.i64 main.cpp (224,28)
+   -> DELETE: llvm.ssa.copy.p0 main.cpp
+   -> DELETE: llvm.ssa.copy.i64 main.cpp
+   -> DELETE: llvm.ssa.copy.i64 main.cpp (230,27)
+   -> DELETE: llvm.ssa.copy.i64 main.cpp (224,28)
+   -> DELETE: llvm.ssa.copy.i64 main.cpp
+   -> DELETE: llvm.ssa.copy.i64 main.cpp (219,27)
+   -> DELETE: llvm.ssa.copy.i64 main.cpp
+   -> DELETE: llvm.ssa.copy.i32 main.cpp
+   -> DELETE: llvm.ssa.copy.p0 main.cpp
+   -> DELETE: llvm.ssa.copy.p0 main.cpp
+   -> DELETE: llvm.ssa.copy.i32 main.cpp (217,40)
+   -> DELETE: llvm.ssa.copy.i64 main.cpp
+   -> DELETE: llvm.ssa.copy.i32 main.cpp
+   -> DELETE: llvm.ssa.copy.i32 main.cpp (217,40)
+   -> DELETE: llvm.ssa.copy.i64 main.cpp (224,28)
    -> llvm.stacksave.p0 main.cpp
-   -> llvm.stackrestore.p0 main.cpp (170,1)
+   -> llvm.stackrestore.p0 main.cpp (236,1)
    -> llvm.stacksave.p0 main.cpp
-   -> llvm.stackrestore.p0 main.cpp (170,1)
-   -> llvm.memset.p0.i64 main.cpp (152,3)
-   -> llvm.memset.p0.i64 main.cpp (152,3)
-   -> llvm.memset.p0.i64 main.cpp (152,3)
-   -> llvm.memset.p0.i64 main.cpp (152,3)
-   -> llvm.memset.p0.i64 main.cpp (152,3)
-   -> llvm.memset.p0.i64 main.cpp (152,3)
+   -> llvm.stackrestore.p0 main.cpp (236,1)
+   -> llvm.memset.p0.i64 main.cpp (218,3)
+   -> llvm.memset.p0.i64 main.cpp (218,3)
+   -> llvm.memset.p0.i64 main.cpp (218,3)
+   -> llvm.memset.p0.i64 main.cpp (218,3)
+   -> llvm.memset.p0.i64 main.cpp (218,3)
+   -> llvm.memset.p0.i64 main.cpp (218,3)
 
 COMPILE FUNC: _Z8MsSerialPiS_m
-   -> BROKER: __kmpc_fork_call main.cpp (211,2)(_Z8MsSerialPiS_m.extracted)
+   -> BROKER: __kmpc_fork_call main.cpp (277,2)(_Z8MsSerialPiS_m.extracted)
 
 COMPILE FUNC: main
-   -> _Z15print_timestampPKc main.cpp (226,5) (475>250)
-   -> EXTERN: puts main.cpp (228,3)
-   -> EXTERN: putchar main.cpp (229,3)
-   -> EXTERN: strtol main.cpp (233,25)
-   -> EXTERN: malloc main.cpp (244,16)
-   -> EXTERN: malloc main.cpp (245,15)
-   -> EXTERN: malloc main.cpp (246,15)
-   -> _Z15print_timestampPKc main.cpp (248,9) (475>250)
-   -> EXTERN: puts main.cpp (250,3)
-   -> _Z15print_timestampPKc main.cpp (257,9) (475>250)
-   -> INLINE: _ZSt4copyIPiS0_ET0_T_S2_S1_ main.cpp (258,3) (-15000<=325)
+   -> _Z15print_timestampPKc main.cpp (292,5) (475>250)
+   -> EXTERN: puts main.cpp (294,3)
+   -> EXTERN: putchar main.cpp (295,3)
+   -> EXTERN: strtol main.cpp (299,25)
+   -> EXTERN: posix_memalign main.cpp (303,3)
+   -> EXTERN: posix_memalign main.cpp (304,3)
+   -> EXTERN: posix_memalign main.cpp (305,3)
+   -> EXTERN: madvise main.cpp (306,3)
+   -> EXTERN: madvise main.cpp (307,3)
+   -> EXTERN: madvise main.cpp (308,3)
+   -> _Z15print_timestampPKc main.cpp (314,9) (475>250)
+   -> EXTERN: puts main.cpp (316,3)
+   -> _Z15print_timestampPKc main.cpp (323,9) (475>250)
+   -> INLINE: _ZSt4copyIPiS0_ET0_T_S2_S1_ main.cpp (324,3) (-15000<=325)
       -> INLINE: _ZSt12__miter_baseIPiET_S1_ main.cpp (633,8) (-35<=487)
       -> INLINE: _ZSt12__miter_baseIPiET_S1_ main.cpp (633,36) (-35<=487)
       -> INLINE: _ZSt13__copy_move_aILb0EPiS0_ET1_T0_S2_S1_ main.cpp (632,14) (-15000<=325)
@@ -4246,29 +4319,30 @@ COMPILE FUNC: main
                   -> llvm.memmove.p0.p0.i64 main.cpp (437,6)
                   -> INLINE: _ZNSt11__copy_moveILb0ELb0ESt26random_access_iterator_tagE12__assign_oneIiiEEvPT_PT0_ main.cpp (439,6) (-30<=45)
          -> INLINE: _ZSt12__niter_wrapIPiET_RKS1_S1_ main.cpp (540,14) (-40<=1012)
-   -> _Z15print_timestampPKc main.cpp (259,9) (475>250)
-   -> EXTERN: printf main.cpp (262,3)
-   -> _Z15print_timestampPKc main.cpp (264,9) (475>250)
-   -> EXTERN: gettimeofday main.cpp (265,3)
-   -> INLINE: _Z8MsSerialPiS_m main.cpp (266,3) (15<=375)
-      -> BROKER: __kmpc_fork_call main.cpp (211,2)(_Z8MsSerialPiS_m.extracted)
-   -> EXTERN: gettimeofday main.cpp (267,3)
-   -> _Z15print_timestampPKc main.cpp (268,9) (475>250)
-   -> EXTERN: printf main.cpp (272,3)
-   -> INLINE: _Z8isSortedPiS_m main.cpp (273,7) (35<=250)
+   -> _Z15print_timestampPKc main.cpp (325,9) (475>250)
+   -> EXTERN: printf main.cpp (328,3)
+   -> _Z15print_timestampPKc main.cpp (336,9) (475>250)
+   -> _Z15print_timestampPKc main.cpp (338,9) (475>250)
+   -> EXTERN: gettimeofday main.cpp (339,3)
+   -> INLINE: _Z8MsSerialPiS_m main.cpp (340,3) (15<=375)
+      -> BROKER: __kmpc_fork_call main.cpp (277,2)(_Z8MsSerialPiS_m.extracted)
+   -> EXTERN: gettimeofday main.cpp (341,3)
+   -> _Z15print_timestampPKc main.cpp (342,9) (475>250)
+   -> EXTERN: printf main.cpp (346,3)
+   -> INLINE: _Z8isSortedPiS_m main.cpp (347,7) (35<=250)
       -> INLINE: _ZNSt10__parallel4sortIPiEEvT_S2_ main.cpp (58,2) (-14995<=487)
          -> INLINE: _ZN14__gnu_parallel20default_parallel_tagC2Ev main.cpp (1672,5) (-15035<=375)
             -> INLINE: _ZN14__gnu_parallel12parallel_tagC2Ev main.cpp (81,5) (-15030<=375)
          -> _ZNSt10__parallel4sortIPiSt4lessIiEN14__gnu_parallel20default_parallel_tagEEEvT_S6_T0_T1_ main.cpp (1671,7) (995>250 [EE:625>625])
-   -> DELETE: puts main.cpp (274,4)
-   -> EXTERN: puts main.cpp (277,4)
-   -> _Z15print_timestampPKc main.cpp (279,9) (475>250)
-   -> EXTERN: free main.cpp (281,3)
-   -> EXTERN: free main.cpp (282,3)
-   -> EXTERN: free main.cpp (283,3)
-   -> _Z15print_timestampPKc main.cpp (285,5) (475>250)
-   -> BROKER: __kmpc_fork_call main.cpp (252,3)(main.extracted)
-   -> _Z15print_timestampPKc main.cpp (257,9) (475>250)
+   -> DELETE: puts main.cpp (348,4)
+   -> EXTERN: puts main.cpp (351,4)
+   -> _Z15print_timestampPKc main.cpp (353,9) (475>250)
+   -> EXTERN: free main.cpp (355,3)
+   -> EXTERN: free main.cpp (356,3)
+   -> EXTERN: free main.cpp (357,3)
+   -> _Z15print_timestampPKc main.cpp (359,5) (475>250)
+   -> BROKER: __kmpc_fork_call main.cpp (318,3)(main.extracted)
+   -> BROKER: __kmpc_fork_call main.cpp (332,9)(main.extracted.56)
    -> DELETE: llvm.ssa.copy.i64 main.cpp (59,35)
 
 COMPILE FUNC: _ZN14__gnu_parallel21parallel_sort_mwms_puILb0ELb1EPiSt4lessIiEEEvPNS_17_PMWMSSortingDataIT1_EERT2_
@@ -4730,6 +4804,46 @@ COMPILE FUNC: _ZNK14__gnu_parallel18_SplitConsistentlyILb1EPiSt4lessIiES1_EclEtP
    -> llvm.masked.scatter.v4i64.v4p0 main.cpp (165,45)
    -> llvm.masked.gather.v4p0.v4p0 main.cpp (162,38)
    -> llvm.masked.scatter.v4i64.v4p0 main.cpp (162,3)
+
+COMPILE FUNC: _Z17MsMergeSequentialPiPKilllll
+   -> INLINE: _ZL15_mm_stream_si32Pvi main.cpp (167,3)
+   -> INLINE: _ZL15_mm_stream_si32Pvi main.cpp (162,3)
+   -> INLINE: _ZL15_mm_stream_si32Pvi main.cpp (146,13)
+   -> INLINE: _ZL15_mm_stream_si32Pvi main.cpp (83,13)
+   -> INLINE: _ZL19_mm512_stream_si512PvDv8_x main.cpp (136,9)
+   -> INLINE: _ZL17_mm512_load_si512PKv main.cpp (136,47)
+   -> DELETE: llvm.prefetch.p0 main.cpp (113,9)
+   -> DELETE: llvm.prefetch.p0 main.cpp (114,9)
+   -> llvm.prefetch.p0 main.cpp (113,9)
+   -> llvm.prefetch.p0 main.cpp (114,9)
+   -> DELETE: llvm.memcpy.p0.p0.i64 main.cpp (162,26)
+   -> llvm.memcpy.p0.p0.i64 main.cpp (162,26)
+   -> DELETE: llvm.memcpy.p0.p0.i64 main.cpp (167,26)
+   -> llvm.memcpy.p0.p0.i64 main.cpp (167,26)
+   -> DELETE: llvm.ssa.copy.i64 main.cpp
+   -> DELETE: llvm.ssa.copy.i64 main.cpp
+   -> DELETE: llvm.ssa.copy.i64 main.cpp
+   -> DELETE: llvm.ssa.copy.i64 main.cpp (116,33)
+   -> DELETE: llvm.ssa.copy.i64 main.cpp (163,7)
+   -> DELETE: llvm.ssa.copy.i64 main.cpp (163,14)
+   -> DELETE: llvm.ssa.copy.i64 main.cpp (168,8)
+   -> DELETE: llvm.ssa.copy.i64 main.cpp (168,15)
+   -> llvm.smin.i32 main.cpp (83,46)
+   -> llvm.smin.i32 main.cpp (121,27)
+   -> llvm.smin.v4i32 main.cpp (121,27)
+   -> llvm.smin.v8i32 main.cpp (121,27)
+   -> llvm.smin.i32 main.cpp (121,27)
+   -> llvm.smin.i32 main.cpp (121,27)
+   -> llvm.smin.i32 main.cpp (121,27)
+   -> EXTERN: __libirc_nontemporal_store main.cpp (161,14)
+   -> llvm.smin.i32 main.cpp (146,46)
+   -> EXTERN: __libirc_nontemporal_store main.cpp (147,18)
+   -> llvm.masked.load.v16i32.p0 main.cpp (162,36)
+   -> llvm.masked.store.v16i32.p0 main.cpp (162,3)
+   -> llvm.smax.i64 main.cpp (167,3)
+   -> llvm.smax.i64 main.cpp (167,3)
+   -> llvm.masked.load.v16i32.p0 main.cpp (167,36)
+   -> llvm.masked.store.v16i32.p0 main.cpp (167,3)
 
 COMPILE FUNC: _Z15print_timestampPKc
    -> EXTERN: _ZNSt6chrono3_V212system_clock3nowEv main.cpp (49,16)
@@ -5698,86 +5812,89 @@ COMPILE FUNC: _Z8isSortedPiS_m
          -> INLINE: _ZN14__gnu_parallel12parallel_tagC2Ev main.cpp (81,5) (-15030<=375)
       -> _ZNSt10__parallel4sortIPiSt4lessIiEN14__gnu_parallel20default_parallel_tagEEEvT_S6_T0_T1_ main.cpp (1671,7) (995>250 [EE:625>625])
 
-COMPILE FUNC: _Z17MsMergeSequentialPiPKilllll
-   -> llvm.memcpy.p0.p0.i64 main.cpp (96,12)
-   -> llvm.smin.i32 main.cpp (81,15)
-   -> llvm.memcpy.p0.p0.i64 main.cpp (101,12)
-
 COMPILE FUNC: _Z9radixSortPiS_l
-   -> DELETE: llvm.memset.p0.i64 main.cpp (152,3)
-   -> INLINE: _ZSt4swapIPiENSt9enable_ifIXsr6__and_ISt6__not_ISt15__is_tuple_likeIT_EESt21is_move_constructibleIS4_ESt18is_move_assignableIS4_EEE5valueEvE4typeERS4_SD_ main.cpp (168,3) (-15040<=487)
-   -> DELETE: llvm.memset.p0.i64 main.cpp (152,3)
-   -> DELETE: llvm.memset.p0.i64 main.cpp (152,3)
-   -> DELETE: llvm.memset.p0.i64 main.cpp (152,3)
-   -> llvm.memset.p0.i64 main.cpp (152,3)
-   -> llvm.memset.p0.i64 main.cpp (152,3)
+   -> DELETE: llvm.memset.p0.i64 main.cpp (218,3)
+   -> INLINE: _ZSt4swapIPiENSt9enable_ifIXsr6__and_ISt6__not_ISt15__is_tuple_likeIT_EESt21is_move_constructibleIS4_ESt18is_move_assignableIS4_EEE5valueEvE4typeERS4_SD_ main.cpp (234,3) (-15040<=487)
+   -> DELETE: llvm.memset.p0.i64 main.cpp (218,3)
+   -> DELETE: llvm.memset.p0.i64 main.cpp (218,3)
+   -> DELETE: llvm.memset.p0.i64 main.cpp (218,3)
+   -> llvm.memset.p0.i64 main.cpp (218,3)
+   -> llvm.memset.p0.i64 main.cpp (218,3)
    -> DELETE: llvm.ssa.copy.p0 main.cpp
    -> DELETE: llvm.ssa.copy.i64 main.cpp
-   -> DELETE: llvm.ssa.copy.i64 main.cpp (164,27)
-   -> DELETE: llvm.ssa.copy.i64 main.cpp (158,28)
+   -> DELETE: llvm.ssa.copy.i64 main.cpp (230,27)
+   -> DELETE: llvm.ssa.copy.i64 main.cpp (224,28)
    -> DELETE: llvm.ssa.copy.i64 main.cpp
-   -> DELETE: llvm.ssa.copy.i64 main.cpp (153,27)
+   -> DELETE: llvm.ssa.copy.i64 main.cpp (219,27)
    -> DELETE: llvm.ssa.copy.i64 main.cpp
    -> DELETE: llvm.ssa.copy.i32 main.cpp
    -> DELETE: llvm.ssa.copy.p0 main.cpp
    -> DELETE: llvm.ssa.copy.p0 main.cpp
-   -> DELETE: llvm.ssa.copy.i32 main.cpp (151,40)
+   -> DELETE: llvm.ssa.copy.i32 main.cpp (217,40)
    -> DELETE: llvm.ssa.copy.i64 main.cpp
    -> DELETE: llvm.ssa.copy.i32 main.cpp
-   -> DELETE: llvm.ssa.copy.i32 main.cpp (151,40)
-   -> DELETE: llvm.ssa.copy.i64 main.cpp (158,28)
-   -> llvm.memset.p0.i64 main.cpp (152,3)
-   -> llvm.memset.p0.i64 main.cpp (152,3)
-   -> llvm.memset.p0.i64 main.cpp (152,3)
+   -> DELETE: llvm.ssa.copy.i32 main.cpp (217,40)
+   -> DELETE: llvm.ssa.copy.i64 main.cpp (224,28)
+   -> llvm.memset.p0.i64 main.cpp (218,3)
+   -> llvm.memset.p0.i64 main.cpp (218,3)
+   -> llvm.memset.p0.i64 main.cpp (218,3)
 
 COMPILE FUNC: _GLOBAL__sub_I_main.cpp
    -> INLINE: __cxx_global_var_init main.cpp (-14995<=375)
       -> EXTERN: _ZNSt6chrono3_V212system_clock3nowEv main.cpp (46,19)
 
 COMPILE FUNC: _Z15MsMergeParallelPiS_lllll.extracted
-   -> DELETE: llvm.directive.region.entry main.cpp (124,3)
-   -> _Z15MsMergeParallelPiS_lllll main.cpp (125,3) (1060>250 [EE:625>625])
-   -> DELETE: llvm.directive.region.exit main.cpp (124,3)
+   -> DELETE: llvm.directive.region.entry main.cpp (190,3)
+   -> _Z15MsMergeParallelPiS_lllll main.cpp (191,3) (950>250 [EE:625>625])
+   -> DELETE: llvm.directive.region.exit main.cpp (190,3)
 
-COMPILE FUNC: _Z15MsMergeParallelPiS_lllll.extracted.35
-   -> DELETE: llvm.directive.region.entry main.cpp (126,3)
-   -> _Z15MsMergeParallelPiS_lllll main.cpp (127,3) (1060>250 [EE:625>625])
-   -> DELETE: llvm.directive.region.exit main.cpp (126,3)
+COMPILE FUNC: _Z15MsMergeParallelPiS_lllll.extracted.36
+   -> DELETE: llvm.directive.region.entry main.cpp (192,3)
+   -> _Z15MsMergeParallelPiS_lllll main.cpp (193,3) (950>250 [EE:625>625])
+   -> DELETE: llvm.directive.region.exit main.cpp (192,3)
 
-COMPILE FUNC: _Z15MsMergeParallelPiS_lllll.extracted.38
-   -> DELETE: llvm.directive.region.entry main.cpp (135,3)
-   -> _Z15MsMergeParallelPiS_lllll main.cpp (136,3) (1060>250 [EE:625>625])
-   -> DELETE: llvm.directive.region.exit main.cpp (135,3)
+COMPILE FUNC: _Z15MsMergeParallelPiS_lllll.extracted.39
+   -> DELETE: llvm.directive.region.entry main.cpp (201,3)
+   -> _Z15MsMergeParallelPiS_lllll main.cpp (202,3) (950>250 [EE:625>625])
+   -> DELETE: llvm.directive.region.exit main.cpp (201,3)
 
-COMPILE FUNC: _Z15MsMergeParallelPiS_lllll.extracted.41
-   -> DELETE: llvm.directive.region.entry main.cpp (137,3)
-   -> _Z15MsMergeParallelPiS_lllll main.cpp (138,3) (1060>250 [EE:625>625])
-   -> DELETE: llvm.directive.region.exit main.cpp (137,3)
+COMPILE FUNC: _Z15MsMergeParallelPiS_lllll.extracted.42
+   -> DELETE: llvm.directive.region.entry main.cpp (203,3)
+   -> _Z15MsMergeParallelPiS_lllll main.cpp (204,3) (950>250 [EE:625>625])
+   -> DELETE: llvm.directive.region.exit main.cpp (203,3)
 
 COMPILE FUNC: _Z12MsSequentialPiS_bll.extracted
-   -> DELETE: llvm.directive.region.entry main.cpp (191,3)
-   -> _Z12MsSequentialPiS_bll main.cpp (192,3) (-1>-1)
-   -> DELETE: llvm.directive.region.exit main.cpp (191,3)
+   -> DELETE: llvm.directive.region.entry main.cpp (257,3)
+   -> _Z12MsSequentialPiS_bll main.cpp (258,3) (-1>-1)
+   -> DELETE: llvm.directive.region.exit main.cpp (257,3)
 
-COMPILE FUNC: _Z12MsSequentialPiS_bll.extracted.46
-   -> DELETE: llvm.directive.region.entry main.cpp (193,3)
-   -> _Z12MsSequentialPiS_bll main.cpp (194,3) (-1>-1)
-   -> DELETE: llvm.directive.region.exit main.cpp (193,3)
+COMPILE FUNC: _Z12MsSequentialPiS_bll.extracted.47
+   -> DELETE: llvm.directive.region.entry main.cpp (259,3)
+   -> _Z12MsSequentialPiS_bll main.cpp (260,3) (-1>-1)
+   -> DELETE: llvm.directive.region.exit main.cpp (259,3)
 
 COMPILE FUNC: _Z8MsSerialPiS_m.extracted
-   -> DELETE: llvm.directive.region.entry main.cpp (211,2)
+   -> DELETE: llvm.directive.region.entry main.cpp (277,2)
    -> EXTERN: __kmpc_single main.cpp
-   -> _Z12MsSequentialPiS_bll main.cpp (213,2) (-1>-1)
+   -> _Z12MsSequentialPiS_bll main.cpp (279,2) (-1>-1)
    -> EXTERN: __kmpc_end_single main.cpp
    -> EXTERN: __kmpc_barrier main.cpp
-   -> DELETE: llvm.directive.region.exit main.cpp (211,2)
+   -> DELETE: llvm.directive.region.exit main.cpp (277,2)
+
+COMPILE FUNC: main.extracted.56
+   -> DELETE: llvm.directive.region.entry main.cpp (332,9)
+   -> DELETE: llvm.directive.region.exit main.cpp (332,9)
+   -> EXTERN: __kmpc_for_static_init_8u main.cpp (332,9)
+   -> EXTERN: __kmpc_for_static_fini main.cpp (332,9)
+   -> llvm.umax.i64 main.cpp (332,9)
+   -> llvm.memset.p0.i64 main.cpp (334,22)
 
 COMPILE FUNC: main.extracted
-   -> DELETE: llvm.directive.region.entry main.cpp (252,3)
-   -> EXTERN: rand_r main.cpp (255,40)
-   -> DELETE: llvm.directive.region.exit main.cpp (252,3)
-   -> EXTERN: __kmpc_for_static_init_8u main.cpp (252,3)
-   -> EXTERN: __kmpc_for_static_fini main.cpp (252,3)
+   -> DELETE: llvm.directive.region.entry main.cpp (318,3)
+   -> EXTERN: rand_r main.cpp (321,40)
+   -> DELETE: llvm.directive.region.exit main.cpp (318,3)
+   -> EXTERN: __kmpc_for_static_init_8u main.cpp (318,3)
+   -> EXTERN: __kmpc_for_static_fini main.cpp (318,3)
 
 COMPILE FUNC: _ZN14__gnu_parallel18parallel_sort_mwmsILb0ELb1EPiSt4lessIiEEEvT1_S4_T2_t.extracted
    -> DELETE: llvm.directive.region.entry main.cpp (419,1)

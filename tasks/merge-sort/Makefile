@@ -12,7 +12,7 @@ CXX ?= icpc
 COMPILER = ${CXX}
 FLAGS_OPENMP ?= -qopenmp
 FLAGS = -g ${FLAGS_OPENMP}
-FLAGS_FAST = -O3 -march=native -xHost -qopt-report=3 -Wno-deprecated-declarations -DENABLE_BRANCHLESS
+FLAGS_FAST = -O3 -march=native -xHost -qopt-report=3 -Wno-deprecated-declarations -DENABLE_BRANCHLESS -DENABLE_HUGE_PAGES
 FLAGS_DEBUG = -O0 -Wall -Wextra
 INCLUDES = $(addprefix -I, ${SRCDIRS})
 LDLIBS =

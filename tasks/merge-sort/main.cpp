@@ -68,37 +68,103 @@ bool isSorted(int ref[], int data[], const size_t size){
 /**
   * sequential merge step (straight-forward implementation)
   */
+// AVX-512 Optimized Merge with Buffered Streaming Stores
 void MsMergeSequential(int * __restrict__ out, const int * __restrict__ in, long begin1, long end1, long begin2, long end2, long outBegin) {
 	long left = begin1;
 	long right = begin2;
 	long idx = outBegin;
 
-	for (; left < end1 && right < end2; ++idx) {
-		int val1 = in[left];
-		int val2 = in[right];
-		#ifdef ENABLE_BRANCHLESS
-			long takeLeft = (val1 <= val2);
-			out[idx] = takeLeft ? val1 : val2;
-			left += takeLeft;
-			right += (1 - takeLeft);
-		#else
-			if (val1 <= val2) {
-				out[idx] = val1;
-				left++;
-			} else {
-				out[idx] = val2;
-				right++;
-			}
-		#endif
+    // --- Prologue: Align output to 64 bytes (16 integers) ---
+    while ( (left < end1 && right < end2) && (((uintptr_t)(out + idx) & 63) != 0) ) {
+        int val1 = in[left];
+        int val2 = in[right];
+        #ifdef ENABLE_BRANCHLESS
+            long takeLeft = (val1 <= val2);
+            _mm_stream_si32((int*)&out[idx], takeLeft ? val1 : val2);
+            left += takeLeft;
+            right += (1 - takeLeft);
+        #else
+            if (val1 <= val2) {
+                _mm_stream_si32((int*)&out[idx], val1);
+                left++;
+            } else {
+                _mm_stream_si32((int*)&out[idx], val2);
+                right++;
+            }
+        #endif
+        idx++;
+    }
+
+    // --- Bulk Loop: Write 64 bytes at a time ---
+    // Buffer for collecting 16 integers. Aligned to 64 bytes for AVX-512 load.
+    alignas(64) int buffer[16];
+    const long P_DIST = 32;
+
+    // We need at least 16 elements available in the output stream to write a full block.
+    // However, the loop condition depends on input availability.
+    // Detailed check: We can run a batch if we can safely perform 16 consumption steps?
+    // Not necessarily. We might consume 16 from Left and 0 from Right.
+    // So we need: left + 16 <= end1 AND right + 16 <= end2 to be SAFE.
+    // If one is smaller, we fallback to scalar.
+    
+    while (left + 16 <= end1 && right + 16 <= end2) {
+        
+        // Prefetch hint
+        _mm_prefetch((const char*)&in[left + P_DIST], _MM_HINT_T0);
+        _mm_prefetch((const char*)&in[right + P_DIST], _MM_HINT_T0);
+
+        for (int k = 0; k < 16; ++k) {
+            int val1 = in[left];
+            int val2 = in[right];
+            #ifdef ENABLE_BRANCHLESS
+                long takeLeft = (val1 <= val2);
+                buffer[k] = takeLeft ? val1 : val2;
+                left += takeLeft;
+                right += (1 - takeLeft);
+            #else
+                if (val1 <= val2) {
+                    buffer[k] = val1;
+                    left++;
+                } else {
+                    buffer[k] = val2;
+                    right++;
+                }
+            #endif
+        }
+        
+        // Stream out full cache line (guarantees no RFO)
+        _mm512_stream_si512((void*)&out[idx], _mm512_load_si512(buffer));
+        idx += 16;
+    }
+
+    // --- Epilogue: Handle remaining items scalar-wise ---
+	while (left < end1 && right < end2) {
+        int val1 = in[left];
+        int val2 = in[right];
+        #ifdef ENABLE_BRANCHLESS
+            long takeLeft = (val1 <= val2);
+            _mm_stream_si32((int*)&out[idx], takeLeft ? val1 : val2);
+            left += takeLeft;
+            right += (1 - takeLeft);
+        #else
+            if (val1 <= val2) {
+                _mm_stream_si32((int*)&out[idx], val1);
+                left++;
+            } else {
+                _mm_stream_si32((int*)&out[idx], val2);
+                right++;
+            }
+        #endif
+        idx++;
 	}
 
 	while (left < end1) {
-		out[idx] = in[left];
+		_mm_stream_si32((int*)&out[idx], in[left]);
 		left++, idx++;
 	}
 
 	while (right < end2) {
-		out[idx] = in[right];
+		_mm_stream_si32((int*)&out[idx], in[right]);
 		right++, idx++;
 	}
 }
@@ -260,6 +326,14 @@ int main(int argc, char* argv[]) {
 
 		double dSize = (stSize * sizeof(int)) / 1024 / 1024;
 		printf("Sorting %zu elements of type int (%f MiB)...\n", stSize, dSize);
+
+        // Pre-fault tmp array to avoid page fault overhead during measurement
+        // Use the same parallel schedule as data initialization to enforce optimal NUMA placement
+        #pragma omp parallel for
+        for (size_t idx = 0; idx < stSize; ++idx) {
+            tmp[idx] = 0;
+        }
+        print_timestamp("Tmp array pre-faulted");
 
         print_timestamp("Before MsSerial");
 		gettimeofday(&t1, NULL);
