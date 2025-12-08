@@ -73,18 +73,23 @@ void MsMergeSequential(int * __restrict__ out, const int * __restrict__ in, long
 	long right = begin2;
 	long idx = outBegin;
 
-	#pragma ivdep
-	while (left < end1 && right < end2) {
-		_mm_prefetch((const char*)&in[left + 32], _MM_HINT_T0);
-		_mm_prefetch((const char*)&in[right + 32], _MM_HINT_T0);
+	for (; left < end1 && right < end2; ++idx) {
 		int val1 = in[left];
 		int val2 = in[right];
-		long takeLeft = (val1 <= val2);
-		out[idx] = takeLeft ? val1 : val2;
-		left += takeLeft;
-		right += (1 - takeLeft);
-
-		idx++;
+		#ifdef ENABLE_BRANCHLESS
+			long takeLeft = (val1 <= val2);
+			out[idx] = takeLeft ? val1 : val2;
+			left += takeLeft;
+			right += (1 - takeLeft);
+		#else
+			if (val1 <= val2) {
+				out[idx] = val1;
+				left++;
+			} else {
+				out[idx] = val2;
+				right++;
+			}
+		#endif
 	}
 
 	while (left < end1) {
@@ -228,12 +233,18 @@ int main(int argc, char* argv[]) {
 		const size_t stSize = strtol(argv[1], NULL, 10);
 		size_t bytes = stSize * sizeof(int);
 		int *data, *tmp, *ref;
+#ifdef ENABLE_HUGE_PAGES
 		posix_memalign((void**)&data, 2097152, bytes);
 		posix_memalign((void**)&tmp, 2097152, bytes);
 		posix_memalign((void**)&ref, 2097152, bytes);
 		madvise(data, bytes, MADV_HUGEPAGE);
 		madvise(tmp, bytes, MADV_HUGEPAGE);
 		madvise(ref, bytes, MADV_HUGEPAGE);
+#else
+		data = (int*)malloc(bytes);
+		tmp = (int*)malloc(bytes);
+		ref = (int*)malloc(bytes);
+#endif
         print_timestamp("Memory allocated");
 
 		printf("Initialization...\n");
