@@ -14,10 +14,10 @@ srun --account=lect0163 \
      --nodes=1 \
      --ntasks=1 \
      --cpus-per-task=${NTHREADS} \
+     --partition=c23g \
      --gres=gpu:1 \
      --exclusive \
      --time=00:10:00 \
-     -23g \
      zsh -c "
          ulimit -n 2048
          cd ${TASK_DIR}

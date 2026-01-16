@@ -54,43 +54,70 @@ void init_centroids(point_t *centroids, int k, int d){
 }
 
 void k_means(int niters, point_t *points, point_t *centroids, int *assignment, point_t* memory, int n, int k) {
-    for (int iter = 0; iter < niters; ++iter) {
-        // determine nearest centroids
-        for (int i = 0; i < n; ++i) {
-            double optimal_dist = DBL_MAX;
-            for (int j = 0; j < k; ++j) {
-                double dist = std::sqrt(
-                    std::pow(points[i].x - centroids[j].x, 2) +
-                    std::pow(points[i].y - centroids[j].y, 2)
-                );
-                if (dist < optimal_dist) {
-                    optimal_dist = dist;
-                    assignment[i] = j;
-                }
-            }
-        }
+    // Allocate auxiliary arrays for reduction
+    double* sum_x = (double*) malloc(k * sizeof(double));
+    double* sum_y = (double*) malloc(k * sizeof(double));
+    int* count = (int*) malloc(k * sizeof(int));
 
-        // update centroid positions
-        for (int j = 0; j < k; ++j) {
-            int count = 0;
-            double sum_x = 0.;
-            double sum_y = 0.;
+    #pragma omp target data map(to: points[0:n]) \
+                            map(tofrom: centroids[0:k], memory[0:(niters + 1) * k]) \
+                            map(alloc: assignment[0:n], sum_x[0:k], sum_y[0:k], count[0:k])
+    {
+        for (int iter = 0; iter < niters; ++iter) {
+            // Determine nearest centroids
+            #pragma omp target teams distribute parallel for
             for (int i = 0; i < n; ++i) {
-                if (assignment[i] == j) {
-                    count++;
-                    sum_x += points[i].x;
-                    sum_y += points[i].y;
+                double optimal_dist = DBL_MAX;
+                int best_cluster = 0;
+                for (int j = 0; j < k; ++j) {
+                    double dist = (points[i].x - centroids[j].x) * (points[i].x - centroids[j].x) +
+                                  (points[i].y - centroids[j].y) * (points[i].y - centroids[j].y);
+                    if (dist < optimal_dist) {
+                        optimal_dist = dist;
+                        best_cluster = j;
+                    }
                 }
+                assignment[i] = best_cluster;
             }
-            if (count != 0) {
-                centroids[j].x = sum_x / count;
-                centroids[j].y = sum_y / count;
+
+            // Reset reduction arrays
+            #pragma omp target teams distribute parallel for
+            for (int j = 0; j < k; ++j) {
+                sum_x[j] = 0.0;
+                sum_y[j] = 0.0;
+                count[j] = 0;
             }
-            // save centroids to memory
-            memory[(iter + 1) * k + j].x = centroids[j].x;
-            memory[(iter + 1) * k + j].y = centroids[j].y;
+
+            // Accumulate new centroid positions (O(N) step with global atomics)
+            // Note: Reduction on dynamic array sections is not working with this compiler (VLA error).
+            // Fallback to atomic updates.
+            #pragma omp target teams distribute parallel for
+            for (int i = 0; i < n; ++i) {
+                int j = assignment[i];
+                #pragma omp atomic update
+                sum_x[j] += points[i].x;
+                #pragma omp atomic update
+                sum_y[j] += points[i].y;
+                #pragma omp atomic update
+                count[j] += 1;
+            }
+
+            // Update centroid positions and memory
+            #pragma omp target teams distribute parallel for
+            for (int j = 0; j < k; ++j) {
+                if (count[j] != 0) {
+                    centroids[j].x = sum_x[j] / count[j];
+                    centroids[j].y = sum_y[j] / count[j];
+                }
+                // save centroids to memory (linear index)
+                memory[(iter + 1) * k + j].x = centroids[j].x;
+                memory[(iter + 1) * k + j].y = centroids[j].y;
+            }
         }
     }
+    free(sum_x);
+    free(sum_y);
+    free(count);
 }
 
 int main(int argc, const char* argv[]) {
