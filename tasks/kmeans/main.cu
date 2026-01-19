@@ -92,9 +92,8 @@ __global__ void determine_nearest_centroid(
       }
     }
 
-    // Write block results to global memory. one atomic operation per centroid
-    // per
-    // SM
+    // Write block results to global memory. one atomic operation per
+    // centroid/thread
     atomicAdd(&sum_x[assignment], px);
     atomicAdd(&sum_y[assignment], py);
     atomicAdd(&count[assignment], 1);
