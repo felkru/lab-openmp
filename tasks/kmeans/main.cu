@@ -116,6 +116,7 @@ __global__ void update_centroid_positions(int k, int num_devices,
   double total_sx = 0.0;
   double total_sy = 0.0;
 
+  // Access the partial sums of all GPUs
   for (int d = 0; d < num_devices; ++d) {
     total_c += all_count[d][j];
     total_sx += all_sum_x[d][j];
@@ -255,11 +256,12 @@ int main(int argc, const char *argv[]) {
   double **d_gather_sum_x, **d_gather_sum_y;
   int **d_gather_count;
 
+  // Store list of pointers for the partial sums on each GPU
   std::vector<double *> h_gather_sum_x(num_devices),
       h_gather_sum_y(num_devices);
   std::vector<int *> h_gather_count(num_devices);
 
-  // Allocate Acual Data for the results of each GPU on GPU 0
+  // Fill the list of pointers for the partial sums on each GPU
   for (int d = 0; d < num_devices; ++d) {
     h_gather_sum_x[d] = devices[d].sum_x;
     h_gather_sum_y[d] = devices[d].sum_y;
@@ -271,12 +273,19 @@ int main(int argc, const char *argv[]) {
   cudaMalloc(&d_gather_sum_y, num_devices * sizeof(double *));
   cudaMalloc(&d_gather_count, num_devices * sizeof(int *));
   // Copy these Pointers from CPU to GPU 0
+  // h_gather_sum_x.data() contains list of Addresses of [devices[0].sum_x, devices[1].sum_x, devices[2].sum_x...]
+  // h_gather_sum_y.data() contains list of Addresses of [devices[0].sum_y, devices[1].sum_y, devices[2].sum_y...]
+  // h_gather_count.data() contains list of Addresses of [devices[0].count, devices[1].count, devices[2].count...]
   cudaMemcpy(d_gather_sum_x, h_gather_sum_x.data(),
              num_devices * sizeof(double *), cudaMemcpyHostToDevice);
   cudaMemcpy(d_gather_sum_y, h_gather_sum_y.data(),
              num_devices * sizeof(double *), cudaMemcpyHostToDevice);
   cudaMemcpy(d_gather_count, h_gather_count.data(), num_devices * sizeof(int *),
              cudaMemcpyHostToDevice);
+  // After the copy
+  // d_gather_sum_x = [devices[0].sum_x, devices[1].sum_x, devices[2].sum_x...]
+  // d_gather_sum_y = [devices[0].sum_y, devices[1].sum_y, devices[2].sum_y...]
+  // d_gather_count = [devices[0].count, devices[1].count, devices[2].count...]
 
   const char *mode =
       (ENABLE_MINI_BATCH && n >= TOTAL_BATCH_SIZE) ? "Mini-Batch" : "Exact";
@@ -345,8 +354,8 @@ int main(int argc, const char *argv[]) {
           devices[d].count);
 
       cudaStreamSynchronize(devices[d].stream);
-// wait till each computation is done
-#pragma omp barrier
+      // wait till each computation is done
+      #pragma omp barrier
     }
 
     // Reduction Phase: Compute new centroids on GPU 0
@@ -365,7 +374,7 @@ int main(int argc, const char *argv[]) {
         devices[0].centroids_x, devices[0].centroids_y);
     cudaStreamSynchronize(devices[0].stream);
 
-// Broadcast Phase: Centroids (GPU 0 -> Peers)
+    // Broadcast Phase: Centroids (GPU 0 -> Peers)
 #pragma omp parallel num_threads(num_devices)
     {
       int d = omp_get_thread_num();
