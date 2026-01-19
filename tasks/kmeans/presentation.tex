@@ -44,6 +44,18 @@
 \end{frame}
 
 \section{CUDA Approach}
+\begin{frame}{System Architecture}
+    \centering
+    \includegraphics[width=0.9\textwidth]{architecture.png}
+    \vspace{0.5cm}
+    \begin{itemize}
+        \item Parallel allocation
+        \item Compute assignments
+        \item Gather partial sums
+        \item Update centroids (GPU 0)
+        \item Broadcast
+    \end{itemize}
+\end{frame}
 \begin{frame}{Why CUDA?}
     \begin{itemize}
         \item Explicit control over memory management (Pinned Memory, Async/Streams).
@@ -107,13 +119,47 @@ omp_set_num_threads(num_devices);
 \end{frame}
 
 \section{Results}
+
 \begin{frame}{Performance Results}
-    \begin{center}
-        \huge
-        \textbf{Runtime: 66s}
-    \end{center}
-    \vspace{1cm}
-    \textit{Achieved on the large dataset.}
+    \begin{table}
+        \centering
+        \small
+        \begin{tabular}{|l|c|c|}
+            \hline
+            \textbf{Implementation} & \textbf{GPUs} & \textbf{Time (s)} \\
+            \hline
+            CUDA (Mini-Batches) & 1 & $\sim 0.60$ \\
+            CUDA (Mini-Batches) & 4 & $\sim 0.37$ \\
+            OpenMP (Mini-Batches) & 1 & $\sim 0.60$ \\
+            OpenMP (Mini-Batches) & 4 & $\sim 0.42$ \\
+            \textbf{CUDA (Exact)} & \textbf{4} & \textbf{$\sim 66$} \\
+            \hline
+        \end{tabular}
+    \end{table}
+    \vspace{0.5cm}
+    \textit{Achieved on the large dataset (100M points, 50K centroids).}
+\end{frame}
+
+\begin{frame}{Performance Plots}
+    \begin{columns}
+        \begin{column}{0.5\textwidth}
+            \centering
+            \includegraphics[width=\textwidth]{plot_mini_batches.png}
+            \\ Mini-Batch Mode
+        \end{column}
+        \begin{column}{0.5\textwidth}
+            \centering
+            \includegraphics[width=\textwidth]{plot_exact.png}
+            \\ Exact Mode
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Cluster Visualization}
+    \centering
+    \includegraphics[width=0.7\textwidth]{clusters_final.png}
+    
+    Visualization of final cluster assignments.
 \end{frame}
 
 \section{Future Work}
