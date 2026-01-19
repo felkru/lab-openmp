@@ -4,23 +4,17 @@
 
 - [x] Convert to GPU code
 - [x] Remove sqrt inside the loop
-- [ ] Use double2 (16-byte aligned) loads
-- [ ] Rely on L2 Cache for centroids (K=50k)
+- [x] Use struct for 16-byte aligned loads - no improvement, removed to prevent unnecessary complexity§
 - [ ] Triangle Inequality (Elkan's)
 - [ ] Keep points on GPU; Async transfers
-
-| Optimization | Method                                  | Impact                       |
-| ------------ | --------------------------------------- | ---------------------------- |
-| Compute      | Remove sqrt inside the loop.            | High (Arithmetic throughput) |
-| Memory       | Use double2 (16-byte aligned) loads.    | High (Bandwidth efficiency)  |
-| Memory       | Rely on L2 Cache for centroids (K=50k). | Critical (H100 specific)     |
-| Algorithm    | Triangle Inequality (Elkan's).          | SOTA (Reduces complexity)    |
-| Pipeline     | Keep points on GPU; Async transfers.    | Medium (Reduces latency)     |
+- [ ] Add support for 4 gpus
 
 ## Benchmarks
 
-| Device | Dataset | Iterations | Threads | Time (s) | Notes                       |
-| :----- | :------ | :--------- | :------ | :------- | :-------------------------- |
-| CPU    | small   | 20         | 1       | 0.000662 | Baseline (g++ -O3)          |
-| GPU    | small   | 20         | 1       | 0.012394 | Global Atomics (Login Node) |
-| GPU    | mid     | 50         | 1       | 0.210154 | Global Atomics (Login Node) |
+| Device | Dataset | Iterations | Threads | Time (s) | Notes                                       |
+| :----- | :------ | :--------- | :------ | :------- | :------------------------------------------ |
+| CPU    | small   | 20         | 1       | 0.000662 | Baseline (g++ -O3)                          |
+| GPU    | small   | 20         | 1       | 0.012394 | Global Atomics (Login Node)                 |
+| GPU    | mid     | 50         | 1       | 0.210154 | Global Atomics (Login Node)                 |
+| GPU    | mid     | 50         | 1       | 0.217191 | struct loads                                |
+| GPU    | mid     | 50         | 1       | 0.318229 | + Triangle Inequality (Regressed, Reverted) |

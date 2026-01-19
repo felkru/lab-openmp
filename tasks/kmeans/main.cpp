@@ -53,34 +53,79 @@ void init_centroids(point_t *centroids, int k, int d){
     }
 }
 
-void k_means(int niters, point_t *points, point_t *centroids, int *assignment, point_t* memory, int n, int k) {
+void k_means(int niters, point_t *points, point_t *centroids, int *assignment, point_t* memory, int n, int k, int prune_start_iter) {
     // Allocate auxiliary arrays for reduction
     double* sum_x = (double*) malloc(k * sizeof(double));
     double* sum_y = (double*) malloc(k * sizeof(double));
     int* count = (int*) malloc(k * sizeof(int));
 
+    // Elkan's/Hamerly's Optimization Structures
+    double* upper_bound = (double*) malloc(n * sizeof(double));
+    double* lower_bound = (double*) malloc(k * sizeof(double)); // Half-distance to nearest other center
+    double* drift = (double*) malloc(k * sizeof(double));
+
+    // Initialize upper bounds to infinity
+    for (int i = 0; i < n; ++i) upper_bound[i] = DBL_MAX;
+    for (int j = 0; j < k; ++j) drift[j] = 0.0;
+
     #pragma omp target data map(to: points[0:n]) \
-                            map(tofrom: centroids[0:k], memory[0:(niters + 1) * k]) \
-                            map(alloc: assignment[0:n], sum_x[0:k], sum_y[0:k], count[0:k])
+                            map(tofrom: centroids[0:k], memory[0:(niters + 1) * k], upper_bound[0:n]) \
+                            map(alloc: assignment[0:n], sum_x[0:k], sum_y[0:k], count[0:k], lower_bound[0:k], drift[0:k])
     {
         for (int iter = 0; iter < niters; ++iter) {
-            // Determine nearest centroids
+            
+            bool pruning_active = (iter >= prune_start_iter);
+
+            // Step 0: Compute Lower Bounds for Centroids (O(K^2))
+            if (pruning_active) {
+                #pragma omp target teams distribute parallel for collapse(1)
+                for (int j = 0; j < k; ++j) {
+                    double min_dist_sq = DBL_MAX;
+                    for (int l = 0; l < k; ++l) {
+                        if (j == l) continue;
+                        double d_sq = (centroids[j].x - centroids[l].x) * (centroids[j].x - centroids[l].x) +
+                                      (centroids[j].y - centroids[l].y) * (centroids[j].y - centroids[l].y);
+                        if (d_sq < min_dist_sq) min_dist_sq = d_sq;
+                    }
+                    lower_bound[j] = std::sqrt(min_dist_sq) * 0.5;
+                }
+            }
+
+            // Step 1: Assignment with Pruning
             #pragma omp target teams distribute parallel for
             for (int i = 0; i < n; ++i) {
-                double optimal_dist = DBL_MAX;
+                // Update upper bound with drift 
+                if (pruning_active && iter > 0) {
+                   upper_bound[i] += drift[assignment[i]];
+                }
+
+                // Pruning Condition
+                if (pruning_active && iter > 0) {
+                    if (upper_bound[i] <= lower_bound[assignment[i]]) {
+                        continue; // Pruned!
+                    }
+                }
+
+                double optimal_dist_sq = DBL_MAX;
                 int best_cluster = 0;
+                
                 for (int j = 0; j < k; ++j) {
-                    double dist = (points[i].x - centroids[j].x) * (points[i].x - centroids[j].x) +
-                                  (points[i].y - centroids[j].y) * (points[i].y - centroids[j].y);
-                    if (dist < optimal_dist) {
-                        optimal_dist = dist;
+                    double dist_sq = (points[i].x - centroids[j].x) * (points[i].x - centroids[j].x) +
+                                     (points[i].y - centroids[j].y) * (points[i].y - centroids[j].y);
+                    if (dist_sq < optimal_dist_sq) {
+                        optimal_dist_sq = dist_sq;
                         best_cluster = j;
                     }
                 }
                 assignment[i] = best_cluster;
+                
+                // Store Euclidean distance if pruning is/will be active
+                if (pruning_active) {
+                    upper_bound[i] = std::sqrt(optimal_dist_sq);
+                }
             }
 
-            // Reset reduction arrays
+            // Step 2: Reset Sums
             #pragma omp target teams distribute parallel for
             for (int j = 0; j < k; ++j) {
                 sum_x[j] = 0.0;
@@ -88,9 +133,7 @@ void k_means(int niters, point_t *points, point_t *centroids, int *assignment, p
                 count[j] = 0;
             }
 
-            // Accumulate new centroid positions (O(N) step with global atomics)
-            // Note: Reduction on dynamic array sections is not working with this compiler (VLA error).
-            // Fallback to atomic updates.
+            // Step 3: Accumulate (Global Atomics)
             #pragma omp target teams distribute parallel for
             for (int i = 0; i < n; ++i) {
                 int j = assignment[i];
@@ -102,14 +145,24 @@ void k_means(int niters, point_t *points, point_t *centroids, int *assignment, p
                 count[j] += 1;
             }
 
-            // Update centroid positions and memory
+            // Step 4: Update Centroids & Compute Drift
             #pragma omp target teams distribute parallel for
             for (int j = 0; j < k; ++j) {
+                drift[j] = 0.0;
                 if (count[j] != 0) {
-                    centroids[j].x = sum_x[j] / count[j];
-                    centroids[j].y = sum_y[j] / count[j];
+                    double new_x = sum_x[j] / count[j];
+                    double new_y = sum_y[j] / count[j];
+                    
+                    if (pruning_active) {
+                        double dx = new_x - centroids[j].x;
+                        double dy = new_y - centroids[j].y;
+                        drift[j] = std::sqrt(dx*dx + dy*dy);
+                    }
+                    
+                    centroids[j].x = new_x;
+                    centroids[j].y = new_y;
                 }
-                // save centroids to memory (linear index)
+                // save centroids to memory
                 memory[(iter + 1) * k + j].x = centroids[j].x;
                 memory[(iter + 1) * k + j].y = centroids[j].y;
             }
@@ -118,12 +171,15 @@ void k_means(int niters, point_t *points, point_t *centroids, int *assignment, p
     free(sum_x);
     free(sum_y);
     free(count);
+    free(upper_bound);
+    free(lower_bound);
+    free(drift);
 }
 
 int main(int argc, const char* argv[]) {
     srand(1234);
-    if (argc < 4 || argc > 6) {
-        printf("Usage: %s <input file> <size dimensions> <num points> <num centroids> <num iters>\n", argv[0]);
+    if (argc < 4 || argc > 7) {
+        printf("Usage: %s <input file> <size dimensions> <num points> <num centroids> <num iters> [prune_start_iter]\n", argv[0]);
         return EXIT_FAILURE;
     }
 
@@ -132,6 +188,7 @@ int main(int argc, const char* argv[]) {
     const int n = atoi(argv[3]);
     const int k = (argc > 4 ? atoi(argv[4]) : DEFAULT_K);
     const int niters = (argc > 5 ? atoi(argv[5]) : DEFAULT_NITERS);
+    const int prune_start_iter = (argc > 6 ? atoi(argv[6]) : 0);
 
     point_t * points = (point_t*) malloc(n * sizeof(point_t));
     point_t * centroids = (point_t*) malloc(k * sizeof(point_t));
@@ -146,9 +203,9 @@ int main(int argc, const char* argv[]) {
         memory[j].y = centroids[j].y;
     }
 
-    printf("Executing k-means à %d iterations with %d points and %d centroids...\n", niters, n, k);
+    printf("Executing k-means à %d iterations with %d points and %d centroids (Pruning start: %d)...\n", niters, n, k, prune_start_iter);
     double runtime = get_time();
-    k_means(niters, points, centroids, assignment, memory, n, k);
+    k_means(niters, points, centroids, assignment, memory, n, k, prune_start_iter);
     runtime = get_time() - runtime;
 
     printf("Time Elapsed: %f s\n", runtime);
