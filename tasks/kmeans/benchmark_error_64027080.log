@@ -1,0 +1,4 @@
+[INFO] Module CUDA/12.6.0 loaded.
+[INFO] Module intel/2024a loaded.
+[INFO] Module Python/3.12.3 loaded.
+[2026-01-20T13:39:04.005] error: *** JOB 64027080 ON n23g0019 CANCELLED AT 2026-01-20T13:39:04 DUE TO TIME LIMIT ***
