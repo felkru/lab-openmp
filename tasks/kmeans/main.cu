@@ -1,21 +1,26 @@
-#include <algorithm>
 #include <cfloat>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cuda_runtime.h>
 #include <fstream>
-#include <iostream>
-#include <omp.h>
 #include <string>
 #include <sys/time.h>
 #include <vector>
+#include <iostream>
+#include <algorithm>
+#include <omp.h>
 
 #define DEFAULT_K 5
 #define DEFAULT_NITERS 20
-#define TOTAL_BATCH_SIZE 250000
 
-#define ENABLE_MINI_BATCH false
+#define cudaCheck(ans) { gpuAssert((ans), __FILE__, __LINE__); }
+inline void gpuAssert(cudaError_t code, const char *file, int line, bool abort=true) {
+   if (code != cudaSuccess) {
+      fprintf(stderr,"GPUassert: %s %s %d\n", cudaGetErrorString(code), file, line);
+      if (abort) exit(code);
+   }
+}
 
 double get_time() {
   struct timeval tv;
@@ -40,13 +45,11 @@ void read_points(std::string filename, double *px, double *py, int n) {
   }
 }
 
-void write_memory(std::string filename, int niters, double *memory_x,
-                  double *memory_y, int k) {
+void write_memory(std::string filename, int niters, const double *mx, const double *my, int k) {
   std::ofstream outfile{filename};
   for (int iter = 0; iter < niters + 1; ++iter) {
     for (int i = 0; i < k; ++i) {
-      outfile << iter << ' ' << memory_x[iter * k + i] << ' '
-              << memory_y[iter * k + i] << '\n';
+      outfile << iter << ' ' << mx[iter * k + i] << ' ' << my[iter * k + i] << '\n';
     }
   }
 }
@@ -58,89 +61,101 @@ void init_centroids(double *centroids_x, double *centroids_y, int k, int d) {
   }
 }
 
-// Update centroid positions (same logic as CPU version)
-__global__ void determine_nearest_centroid(
-    int batch_size, // How many points to process THIS iteration
-    int n_local,    // Total points on this GPU
-    int k,          // Number of centroids
-    int offset,     // Starting position in the data
-    const double *__restrict__ points_x, const double *__restrict__ points_y,
-    const double *__restrict__ centroids_x,
-    const double *__restrict__ centroids_y, double *sum_x, double *sum_y,
-    int *count) {
-  // idx is the index of the point
-  // blockDim How many threads per block
-  // used to index each thread in the block
-  int idx = blockIdx.x * blockDim.x + threadIdx.x;
-  if (idx < batch_size) { // only compute a subset of the points
-    // Offset logic for Local Data Partition
-    int i = (offset + idx) % n_local;
-
-    double px = points_x[i];
-    double py = points_y[i];
-    double optimal_dist_sq = DBL_MAX;
-    int assignment = 0;
-
-    for (int j = 0; j < k; ++j) {
-      double dx = px - centroids_x[j];
-      double dy = py - centroids_y[j];
-      double dist_sq = dx * dx + dy * dy; // Squared distance
-
-      if (dist_sq < optimal_dist_sq) {
-        optimal_dist_sq = dist_sq;
-        assignment = j;
-      }
-    }
-
-    // Write block results to global memory. one atomic operation per centroid
-    // per
-    // SM
-    atomicAdd(&sum_x[assignment], px);
-    atomicAdd(&sum_y[assignment], py);
-    atomicAdd(&count[assignment], 1);
+__global__ void compute_thresholds(int k, const double *cx, const double *cy, double *t) {
+  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  if (i >= k) return;
+  double min_dist = DBL_MAX;
+  for (int j = 0; j < k; ++j) {
+    if (i == j) continue;
+    double dx = cx[i] - cx[j], dy = cy[i] - cy[j];
+    double d = sqrt(dx * dx + dy * dy);
+    if (d < min_dist) min_dist = d;
   }
+  t[i] = 0.5 * min_dist;
 }
 
-// Update centroid positions (Reduction on GPU 0)
-// Aggregates partial sums from all 3 GPUs
-__global__ void update_centroid_positions(int k, int num_devices,
-                                          double **all_sum_x,
-                                          double **all_sum_y, int **all_count,
-                                          double *centroids_x,
-                                          double *centroids_y) {
-  int j = blockIdx.x * blockDim.x + threadIdx.x;
-  if (j >= k)
-    return;
+// Optimized Kernel with Shared Memory Tiling for Centroids
+// FIXED: Removed early returns to ensure all threads reach __syncthreads()
+__global__ void determine_nearest_centroid(int n, int k, const double *px, const double *py,
+                                          const double *__restrict__ cx, const double *__restrict__ cy,
+                                          int *__restrict__ assignments, const double *__restrict__ thresholds, bool use_filtering,
+                                          double *sum_x, double *sum_y, int *count) {
+  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  bool valid = (i < n);
+  bool process = valid;
 
-  int total_c = 0;
-  double total_sx = 0.0;
-  double total_sy = 0.0;
-
-  // Access the partial sums of all GPUs
-  for (int d = 0; d < num_devices; ++d) {
-    total_c += all_count[d][j];
-    total_sx += all_sum_x[d][j];
-    total_sy += all_sum_y[d][j];
+  double x = 0, y = 0;
+  int old_c = -1;
+  if (valid) {
+    x = px[i]; y = py[i];
+    old_c = assignments[i];
   }
 
-  if (total_c > 0) {
-    centroids_x[j] = total_sx / total_c;
-    centroids_y[j] = total_sy / total_c;
+  // 1. Filtering (Triangle Inequality)
+  if (valid && use_filtering && old_c >= 0 && old_c < k) {
+    double dx = x - cx[old_c], dy = y - cy[old_c];
+    if (sqrt(dx * dx + dy * dy) <= thresholds[old_c]) {
+      atomicAdd(&sum_x[old_c], x);
+      atomicAdd(&sum_y[old_c], y);
+      atomicAdd(&count[old_c], 1);
+      process = false; // Skip full search but MUST CONTINUE to sync points
+    }
+  }
+
+  // 2. Full Search with Tiling
+  double min_dist_sq = DBL_MAX;
+  int best_c = 0;
+
+  // Shared Memory Tiling for Centroids
+  // H100 Optimization: Increased to 2048 (32KB) to fit within 48KB static limit
+  const int TILE_SIZE = 2048; 
+  __shared__ double s_cx[TILE_SIZE];
+  __shared__ double s_cy[TILE_SIZE];
+
+  for (int k_start = 0; k_start < k; k_start += TILE_SIZE) {
+    int limit = min(TILE_SIZE, k - k_start);
+    // Cooperative load (ALL threads must execute this)
+    for (int t = threadIdx.x; t < limit; t += blockDim.x) {
+      s_cx[t] = cx[k_start + t];
+      s_cy[t] = cy[k_start + t];
+    }
+    __syncthreads();
+
+    if (process) {
+      for (int j = 0; j < limit; ++j) {
+        double dx = x - s_cx[j], dy = y - s_cy[j];
+        double d2 = dx * dx + dy * dy;
+        if (d2 < min_dist_sq) {
+          min_dist_sq = d2;
+          best_c = k_start + j;
+        }
+      }
+    }
+    __syncthreads();
+  }
+
+  if (process) {
+    assignments[i] = best_c;
+    atomicAdd(&sum_x[best_c], x);
+    atomicAdd(&sum_y[best_c], y);
+    atomicAdd(&count[best_c], 1);
   }
 }
 
 // ---------------- DEVICE DATA STRUCT ----------------
 struct DeviceData {
-  int id;
-  int point_count; // total points / num_devices
-  double *points_x, *points_y;
-  double *centroids_x, *centroids_y;
-  double *sum_x, *sum_y;
-  int *count;
-  cudaStream_t stream;
+    int id;
+    int point_count; // total points / num_devices               
+    double *points_x, *points_y;       
+    double *centroids_x, *centroids_y; 
+    double *sum_x, *sum_y;             
+    int *count;
+    double *t, *sx, *sy;
+    int *assign;
+    cudaStream_t stream;
 };
 
-int main(int argc, const char *argv[]) {
+int main(int argc, char **argv) {
   srand(1234);
   if (argc < 4 || argc > 6) {
     printf("Usage: %s <input file> <size dimensions> <num points> <num "
@@ -161,11 +176,10 @@ int main(int argc, const char *argv[]) {
   std::vector<double> host_points_x(n), host_points_y(n);
   std::vector<double> host_centroids_x(k), host_centroids_y(k);
 
-  read_points(input_file, host_points_x.data(), host_points_y.data(), n);
+  read_points(argv[1], host_points_x.data(), host_points_y.data(), n);
   init_centroids(host_centroids_x.data(), host_centroids_y.data(), k, dim);
 
-  std::vector<double> host_memory_x((niters + 1) * k),
-      host_memory_y((niters + 1) * k);
+  std::vector<double> host_memory_x((niters + 1) * k), host_memory_y((niters + 1) * k);
   for (int j = 0; j < k; ++j) {
     host_memory_x[j] = host_centroids_x[j];
     host_memory_y[j] = host_centroids_y[j];
@@ -175,12 +189,12 @@ int main(int argc, const char *argv[]) {
   // but for gpu usage need to distribute data onto the gpus
   // use cuda calls instead of openmp for that
 
-  int num_devices = 4;
+  int num_devices = 3;
+
   // 1 OpenMP Thread = 1 GPU
   omp_set_num_threads(num_devices);
   std::vector<DeviceData> devices(num_devices);
-  int points_per_gpu = (n + num_devices - 1) /
-                       num_devices; // divide points evenly accross all gpus
+  int points_per_gpu = (n + num_devices - 1) / num_devices; // divide points evenly accross all gpus
 
   // cudaMallocHost nessesary for the use of streams and memcpy
   double *pinned_x, *pinned_y;
@@ -191,211 +205,134 @@ int main(int argc, const char *argv[]) {
   memcpy(pinned_x, host_points_x.data(), n * sizeof(double));
   memcpy(pinned_y, host_points_y.data(), n * sizeof(double));
 
-// Allocation Phase:  Alloc and Copy Points to each GPU
-#pragma omp parallel num_threads(num_devices)
+  // Allocation Phase:  Alloc and Copy Points to each GPU
+  #pragma omp parallel num_threads(num_devices)
   {
     int d = omp_get_thread_num();
-    cudaSetDevice(d);
-    cudaStreamCreate(
-        &devices[d].stream); // Create a stream of data for each gpu
+    cudaCheck(cudaSetDevice(d));
+    cudaCheck(cudaStreamCreate(&devices[d].stream)); // Create a stream of data for each gpu
     devices[d].id = d;
 
     int start = d * points_per_gpu;
     int end = std::min(start + points_per_gpu, n);
     devices[d].point_count = end - start;
 
-    // Allocate space for points
-    cudaMalloc(&devices[d].points_x, devices[d].point_count * sizeof(double));
-    cudaMalloc(&devices[d].points_y, devices[d].point_count * sizeof(double));
-
+     // Allocate space for points
+    cudaCheck(cudaMalloc(&devices[d].points_x, devices[d].point_count * sizeof(double)));
+    cudaCheck(cudaMalloc(&devices[d].points_y, devices[d].point_count * sizeof(double)));
+      
     // Copy points from cpu to gpu
     //  cudaMemcpyHostToDevice is an enum
-    cudaMemcpyAsync(devices[d].points_x, pinned_x + start,
-                    devices[d].point_count * sizeof(double),
-                    cudaMemcpyHostToDevice, devices[d].stream);
-    cudaMemcpyAsync(devices[d].points_y, pinned_y + start,
-                    devices[d].point_count * sizeof(double),
-                    cudaMemcpyHostToDevice, devices[d].stream);
-
+    cudaCheck(cudaMemcpyAsync(devices[d].points_x, pinned_x + start, devices[d].point_count * sizeof(double), cudaMemcpyHostToDevice, devices[d].stream));
+    cudaCheck(cudaMemcpyAsync(devices[d].points_y, pinned_y + start, devices[d].point_count * sizeof(double), cudaMemcpyHostToDevice, devices[d].stream));
+      
     // Allocate space for centroids, sums, and counts Aux
-    cudaMalloc(&devices[d].centroids_x, k * sizeof(double));
-    cudaMalloc(&devices[d].centroids_y, k * sizeof(double));
-    cudaMalloc(&devices[d].sum_x, k * sizeof(double));
-    cudaMalloc(&devices[d].sum_y, k * sizeof(double));
-    cudaMalloc(&devices[d].count, k * sizeof(int));
-
+    cudaCheck(cudaMalloc(&devices[d].centroids_x, k * sizeof(double)));
+    cudaCheck(cudaMalloc(&devices[d].centroids_y, k * sizeof(double)));
+    cudaCheck(cudaMalloc(&devices[d].sum_x, k * sizeof(double)));
+    cudaCheck(cudaMalloc(&devices[d].sum_y, k * sizeof(double)));
+    cudaCheck(cudaMalloc(&devices[d].count, k * sizeof(int)));
+      
     // Copy initial centroids from CPU to each GPU
-    cudaMemcpyAsync(devices[d].centroids_x, host_centroids_x.data(),
-                    k * sizeof(double), cudaMemcpyHostToDevice,
-                    devices[d].stream);
-    cudaMemcpyAsync(devices[d].centroids_y, host_centroids_y.data(),
-                    k * sizeof(double), cudaMemcpyHostToDevice,
-                    devices[d].stream);
+    cudaCheck(cudaMemcpyAsync(devices[d].centroids_x, host_centroids_x.data(), k * sizeof(double), cudaMemcpyHostToDevice, devices[d].stream));
+    cudaCheck(cudaMemcpyAsync(devices[d].centroids_y, host_centroids_y.data(), k * sizeof(double), cudaMemcpyHostToDevice, devices[d].stream));
+      
+    // Like a barrier in openmp. Waits until all preceding commands are done.
+    // make sure that the data is copied before continuing
+    cudaCheck(cudaStreamSynchronize(devices[d].stream));
+
+    cudaCheck(cudaMalloc(&devices[d].t, k * sizeof(double)));
+    cudaCheck(cudaMalloc(&devices[d].sx, k * sizeof(double)));
+    cudaCheck(cudaMalloc(&devices[d].sy, k * sizeof(double)));
+    cudaCheck(cudaMalloc(&devices[d].assign, devices[d].point_count * sizeof(int)));
+    cudaCheck(cudaMemsetAsync(devices[d].assign, -1, devices[d].point_count * sizeof(int), devices[d].stream));
 
     // Like a barrier in openmp. Waits until all preceding commands are done.
     // make sure that the data is copied before continuing
-    cudaStreamSynchronize(devices[d].stream);
+    cudaCheck(cudaStreamSynchronize(devices[d].stream));
 
-// Enable P2P
-#pragma omp barrier
-    for (int peer = 0; peer < num_devices; ++peer) {
-      if (d != peer) {
-        // Enable GPU to GPU Transfer via NVLink
-        cudaDeviceEnablePeerAccess(peer, 0);
-      }
-    }
-#pragma omp barrier
+    // P2P not strictly needed for CPU-based reduction
+    cudaCheck(cudaStreamSynchronize(devices[d].stream));
+    #pragma omp barrier
   }
 
-  // Alloc gather buffers on GPU 0 for reduction across all GPUs
-  // Also need to store the count since we need to average the points.
-  // And different GPUs can have different number of points and so also
-  // different number of count values. For the computation new_centroid_x =
-  // total_sum_x / total_count new_centroid_y = total_sum_y / total_count
-  cudaSetDevice(0);
-  double **d_gather_sum_x, **d_gather_sum_y;
-  int **d_gather_count;
+  // Alloc gathering buffers (2D host-side partial results)
+  std::vector<double> partial_sum_x(num_devices * k), partial_sum_y(num_devices * k);
+  std::vector<int> partial_count(num_devices * k);
 
-  // Store list of pointers for the partial sums on each GPU
-  std::vector<double *> h_gather_sum_x(num_devices),
-      h_gather_sum_y(num_devices);
-  std::vector<int *> h_gather_count(num_devices);
-
-  // Fill the list of pointers for the partial sums on each GPU
-  for (int d = 0; d < num_devices; ++d) {
-    h_gather_sum_x[d] = devices[d].sum_x;
-    h_gather_sum_y[d] = devices[d].sum_y;
-    h_gather_count[d] = devices[d].count;
-  }
-
-  // Allocate Pointers for the Data for each GPU on GPU 0
-  cudaMalloc(&d_gather_sum_x, num_devices * sizeof(double *));
-  cudaMalloc(&d_gather_sum_y, num_devices * sizeof(double *));
-  cudaMalloc(&d_gather_count, num_devices * sizeof(int *));
-  // Copy these Pointers from CPU to GPU 0
-  // h_gather_sum_x.data() contains list of Addresses of [devices[0].sum_x, devices[1].sum_x, devices[2].sum_x...]
-  // h_gather_sum_y.data() contains list of Addresses of [devices[0].sum_y, devices[1].sum_y, devices[2].sum_y...]
-  // h_gather_count.data() contains list of Addresses of [devices[0].count, devices[1].count, devices[2].count...]
-  cudaMemcpy(d_gather_sum_x, h_gather_sum_x.data(),
-             num_devices * sizeof(double *), cudaMemcpyHostToDevice);
-  cudaMemcpy(d_gather_sum_y, h_gather_sum_y.data(),
-             num_devices * sizeof(double *), cudaMemcpyHostToDevice);
-  cudaMemcpy(d_gather_count, h_gather_count.data(), num_devices * sizeof(int *),
-             cudaMemcpyHostToDevice);
-  // After the copy
-  // d_gather_sum_x = [devices[0].sum_x, devices[1].sum_x, devices[2].sum_x...]
-  // d_gather_sum_y = [devices[0].sum_y, devices[1].sum_y, devices[2].sum_y...]
-  // d_gather_count = [devices[0].count, devices[1].count, devices[2].count...]
-
-  const char *mode =
-      (ENABLE_MINI_BATCH && n >= TOTAL_BATCH_SIZE) ? "Mini-Batch" : "Exact";
-  printf("Executing k-means à %d iterations (%s mode, %d GPUs)...\n", niters,
-         mode, num_devices);
+  printf("Executing k-means à %d iterations (%d GPUs)...\n", niters, num_devices);
   double runtime = get_time();
 
-  // Pre-allocate array for random offsets (rand() is not thread-safe)
-  std::vector<int> random_offsets(num_devices);
-
-  // Compute Phase:
-  //  Cannot be parallelized since it depends on the previous iteration
+  // Compute Phase: 
+  // Cannot be parallelized since it depends on the previous iteration
   for (int iter = 0; iter < niters; ++iter) {
-
-    // Pre-compute random offsets BEFORE parallel region (rand() not
-    // thread-safe)
-    if (ENABLE_MINI_BATCH && n >= TOTAL_BATCH_SIZE) {
-      for (int d = 0; d < num_devices; ++d) {
-        random_offsets[d] = rand() % devices[d].point_count;
-      }
-    }
-
-// 1. Parallel Compute on Local Batches
-#pragma omp parallel num_threads(num_devices)
+    #pragma omp parallel num_threads(num_devices)
     {
       int d = omp_get_thread_num();
       cudaSetDevice(d);
-
+          
       // Reset sum_0[x] = 0
       // Reset sum_0[x] = 0
       // Reset count[x] = 0
-      cudaMemsetAsync(devices[d].sum_x, 0, k * sizeof(double),
-                      devices[d].stream);
-      cudaMemsetAsync(devices[d].sum_y, 0, k * sizeof(double),
-                      devices[d].stream);
+      cudaMemsetAsync(devices[d].sum_x, 0, k * sizeof(double), devices[d].stream);
+      cudaMemsetAsync(devices[d].sum_y, 0, k * sizeof(double), devices[d].stream);
       cudaMemsetAsync(devices[d].count, 0, k * sizeof(int), devices[d].stream);
+      
+      int local_batch_size = devices[d].point_count;
 
-      // Distribute Batch Logic
-      int local_batch_size;
-      int local_offset;
-
-      if (!ENABLE_MINI_BATCH || n < TOTAL_BATCH_SIZE) {
-        // Exac K-Means: process ALL points every iteration
-        local_batch_size = devices[d].point_count;
-        local_offset = 0;
-      } else {
-        // Mini-Batch K-Means: random sampling with srand(1234)
-        int target_local_batch = TOTAL_BATCH_SIZE / num_devices;
-        local_batch_size = target_local_batch;
-        local_offset = random_offsets[d]; // Use pre-computed random offset
+      int blockSize = 256;
+      if (iter > 0) {
+        int numBlocksThresholds = (k + blockSize - 1) / blockSize;
+        compute_thresholds<<<numBlocksThresholds, blockSize, 0, devices[d].stream>>>(k, devices[d].centroids_x, devices[d].centroids_y, devices[d].t);
+      }
+      
+      int numBlocksMain = (local_batch_size + blockSize - 1) / blockSize;
+      determine_nearest_centroid<<<numBlocksMain, blockSize, 0, devices[d].stream>>>(
+        local_batch_size, k, devices[d].points_x, 
+        devices[d].points_y, devices[d].centroids_x, 
+        devices[d].centroids_y, devices[d].assign, 
+        devices[d].t, (iter > 0), devices[d].sum_x, devices[d].sum_y, devices[d].count);
+      cudaCheck(cudaGetLastError());
+      cudaCheck(cudaStreamSynchronize(devices[d].stream));
       }
 
-      // Use 256 Threads per block
-      // divide the num of points with the number of threads to get the total
-      // number of blocks this computation runs on 256 Threads per Streaming
-      // Multiprocessor supported on H100's The GPU scheduler decides which
-      // blocks go to which SMs
-      int blockSize = 256;
-      int numBlocks = (local_batch_size + blockSize - 1) / blockSize;
-
-      determine_nearest_centroid<<<numBlocks, blockSize, 0,
-                                   devices[d].stream>>>(
-          local_batch_size, devices[d].point_count, k, local_offset,
-          devices[d].points_x, devices[d].points_y, devices[d].centroids_x,
-          devices[d].centroids_y, devices[d].sum_x, devices[d].sum_y,
-          devices[d].count);
-
-      cudaStreamSynchronize(devices[d].stream);
-      // wait till each computation is done
-      #pragma omp barrier
-    }
-
-    // Reduction Phase: Compute new centroids on GPU 0
-    // Use 256 Threads per block
-    // divide the num of points with the number of threads to get the total
-    // number of blocks this computation runs on 256 Threads per Streaming
-    // Multiprocessor supported on H100's The GPU scheduler decides which blocks
-    // go to which SMs
-    cudaSetDevice(0);
-    int updateBlockSize = 256;
-    int updateNumBlocks = (k + updateBlockSize - 1) / updateBlockSize;
-
-    update_centroid_positions<<<updateNumBlocks, updateBlockSize, 0,
-                                devices[0].stream>>>(
-        k, num_devices, d_gather_sum_x, d_gather_sum_y, d_gather_count,
-        devices[0].centroids_x, devices[0].centroids_y);
-    cudaStreamSynchronize(devices[0].stream);
-
-    // Broadcast Phase: Centroids (GPU 0 -> Peers)
-#pragma omp parallel num_threads(num_devices)
+    // Reduction Phase: Collect from all GPUs to CPU in parallel
+    #pragma omp parallel num_threads(num_devices)
     {
       int d = omp_get_thread_num();
-      if (d > 0) {
-        cudaSetDevice(d);
-        // Peer Copy: updates local centroids from GPU 0's centroids
-        cudaMemcpyPeerAsync(devices[d].centroids_x, d, devices[0].centroids_x,
-                            0, k * sizeof(double), devices[d].stream);
-        cudaMemcpyPeerAsync(devices[d].centroids_y, d, devices[0].centroids_y,
-                            0, k * sizeof(double), devices[d].stream);
-        cudaStreamSynchronize(devices[d].stream);
-      }
-#pragma omp barrier
+      cudaSetDevice(d);
+      cudaMemcpy(partial_sum_x.data() + d * k, devices[d].sum_x, k * sizeof(double), cudaMemcpyDeviceToHost);
+      cudaMemcpy(partial_sum_y.data() + d * k, devices[d].sum_y, k * sizeof(double), cudaMemcpyDeviceToHost);
+      cudaMemcpy(partial_count.data() + d * k, devices[d].count, k * sizeof(int), cudaMemcpyDeviceToHost);
     }
 
-    // Copy updated centroids from GPU 0 → host
-    cudaMemcpy(host_centroids_x.data(), devices[0].centroids_x,
-               k * sizeof(double), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_centroids_y.data(), devices[0].centroids_y,
-               k * sizeof(double), cudaMemcpyDeviceToHost);
-    // Store in history array at position for this iteration
+    // Aggregate results from all devices in parallel
+    #pragma omp parallel for num_threads(num_devices)
+    for (int j = 0; j < k; ++j) {
+      double total_sum_x = 0.0, total_sum_y = 0.0;
+      int total_count = 0;
+      for (int d = 0; d < num_devices; ++d) {
+        total_sum_x += partial_sum_x[d * k + j];
+        total_sum_y += partial_sum_y[d * k + j];
+        total_count += partial_count[d * k + j];
+      }
+      if (total_count > 0) {
+        host_centroids_x[j] = total_sum_x / total_count;
+        host_centroids_y[j] = total_sum_y / total_count;
+      }
+    }
+
+    // Broadcast Phase: Copy new centroids to all GPUs
+    #pragma omp parallel num_threads(num_devices)
+    {
+      int d = omp_get_thread_num();
+      cudaSetDevice(d);
+      cudaMemcpyAsync(devices[d].centroids_x, host_centroids_x.data(), k * sizeof(double), cudaMemcpyHostToDevice, devices[d].stream);
+      cudaMemcpyAsync(devices[d].centroids_y, host_centroids_y.data(), k * sizeof(double), cudaMemcpyHostToDevice, devices[d].stream);
+      cudaStreamSynchronize(devices[d].stream);
+    }
+
+    // Store in history array
     for (int j = 0; j < k; ++j) {
       host_memory_x[(iter + 1) * k + j] = host_centroids_x[j];
       host_memory_y[(iter + 1) * k + j] = host_centroids_y[j];
@@ -404,12 +341,18 @@ int main(int argc, const char *argv[]) {
 
   runtime = get_time() - runtime;
   printf("Time Elapsed: %f s\n", runtime);
-  write_memory("memory.out", niters, host_memory_x.data(), host_memory_y.data(),
-               k);
+  write_memory("memory.out", niters, host_memory_x.data(), host_memory_y.data(), k);
 
   // Cleanup
-  cudaFreeHost(pinned_x);
-  cudaFreeHost(pinned_y);
+  cudaFreeHost(pinned_x); cudaFreeHost(pinned_y);
+  for(int d=0; d<num_devices; ++d) {
+      cudaSetDevice(devices[d].id);
+      cudaFree(devices[d].points_x); cudaFree(devices[d].points_y); cudaFree(devices[d].assign);
+      cudaFree(devices[d].centroids_x); cudaFree(devices[d].centroids_y); cudaFree(devices[d].t);
+      cudaFree(devices[d].sum_x); cudaFree(devices[d].sum_y); cudaFree(devices[d].count);
+      cudaFree(devices[d].sx); cudaFree(devices[d].sy);
+      cudaStreamDestroy(devices[d].stream);
+  }
 
-  return EXIT_SUCCESS;
+  return 0;
 }
