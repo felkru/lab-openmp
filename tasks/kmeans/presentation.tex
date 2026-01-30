@@ -1,0 +1,183 @@
+\documentclass{beamer}
+\usepackage{graphicx}
+\usepackage{xcolor}
+
+% Theme selection
+\usetheme{Madrid}
+\usecolortheme{default}
+
+% Title parameters
+\title{SWP OpenMP: Task 3 Kmeans}
+\subtitle{Our CUDA Approach}
+\author{Group 1: Felix Krückel, Luke Hassel, Gerrik Berner}
+\institute{RWTH Aachen University}
+\date{\today}
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}{Agenda}
+    \tableofcontents
+\end{frame}
+
+\section{K-Means Algorithm}
+\begin{frame}[fragile]{K-Means Algorithm Steps}
+    \begin{enumerate}
+        \item \textbf{Initialization}: Select $k$ initial centroids (randomly).
+        \item \textbf{Assignment}: Assign each data point to the nearest centroid (Euclidean distance).
+        \item \textbf{Update}: Recalculate centroids as the mean of assigned points.
+        \item \textbf{Repeat}: Iterate steps 2 and 3 until convergence or max iterations.
+    \end{enumerate}
+    
+    \vspace{0.5cm}
+    \textbf{Pseudocode:}
+\begin{verbatim}
+    Initialize centroids = random(k)
+    While not converged:
+        For point in data:
+            closest = argmin(distance(point, c) for c in centroids)
+            assign(point, closest)
+        For c in centroids:
+            c = mean(assigned_points)
+\end{verbatim}
+\end{frame}
+
+\section{CUDA Approach}
+\begin{frame}{System Architecture}
+    \centering
+    \includegraphics[width=0.9\textwidth]{architecture.png}
+    \vspace{0.5cm}
+    \begin{itemize}
+        \item Parallel allocation
+        \item Compute assignments
+        \item Gather partial sums
+        \item Update centroids (GPU 0)
+        \item Broadcast
+    \end{itemize}
+\end{frame}
+\begin{frame}{Why CUDA?}
+    \begin{itemize}
+        \item Explicit control over memory management (Pinned Memory, Async/Streams).
+        \item Fine-grained kernel optimization (atomicAdd, shared memory potential).
+        \item Efficient Multi-GPU handling with OpenMP + \texttt{cudaSetDevice}.
+    \end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]{Memory Management}
+    We use \textbf{Pinned Memory} on the host for faster transfers and \textbf{Streams} for asynchronous execution.
+    
+\begin{verbatim}
+// Host Pinned Memory Allocation
+double *pinned_x, *pinned_y;
+cudaMallocHost(&pinned_x, n * sizeof(double));
+cudaMallocHost(&pinned_y, n * sizeof(double));
+
+// Copying to Device (Async)
+cudaMemcpyAsync(devices[d].points_x, pinned_x + start,
+                devices[d].point_count * sizeof(double),
+                cudaMemcpyHostToDevice, devices[d].stream);
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]{The Kernel: Nearest Centroid}
+    Each thread handles one point. We use \texttt{atomicAdd} to aggregate results locally on the GPU.
+    
+\begin{verbatim}
+__global__ void determine_nearest_centroid(...) {
+    int idx = blockIdx.x * blockDim.x + threadIdx.x;
+    if (idx < batch_size) {
+        // ... find nearest centroid logic [omitted] ...
+        
+        // Accumulate results directly in global memory
+        atomicAdd(&sum_x[assignment], px);
+        atomicAdd(&sum_y[assignment], py);
+        atomicAdd(&count[assignment], 1);
+    }
+}
+\end{verbatim}
+\end{frame}
+
+\begin{frame}[fragile]{Multi-GPU Strategy}
+    We use OpenMP to spawn one thread per GPU.
+    
+\begin{verbatim}
+int num_devices = 4;
+omp_set_num_threads(num_devices);
+
+#pragma omp parallel num_threads(num_devices)
+{
+    int d = omp_get_thread_num();
+    cudaSetDevice(d); // Bind thread to GPU
+    
+    // Create per-device stream
+    cudaStreamCreate(&devices[d].stream);
+    
+    // ... Allocate and Compute ...
+}
+\end{verbatim}
+\end{frame}
+
+\section{Results}
+
+\begin{frame}{Performance Results}
+    \begin{table}
+        \centering
+        \small
+        \begin{tabular}{|l|c|c|}
+            \hline
+            \textbf{Implementation} & \textbf{GPUs} & \textbf{Time (s)} \\
+            \hline
+            CUDA (Mini-Batches) & 1 & $\sim 0.60$ \\
+            CUDA (Mini-Batches) & 4 & $\sim 0.37$ \\
+            OpenMP (Mini-Batches) & 1 & $\sim 0.60$ \\
+            OpenMP (Mini-Batches) & 4 & $\sim 0.42$ \\
+            \textbf{CUDA (Exact)} & \textbf{4} & \textbf{$\sim 66$} \\
+            \hline
+        \end{tabular}
+    \end{table}
+    \vspace{0.5cm}
+    \textit{Achieved on the large dataset (100M points, 50K centroids).}
+\end{frame}
+
+\begin{frame}{Performance Plots}
+    \begin{columns}
+        \begin{column}{0.5\textwidth}
+            \centering
+            \includegraphics[width=\textwidth]{plot_mini_batches.png}
+            \\ Mini-Batch Mode
+        \end{column}
+        \begin{column}{0.5\textwidth}
+            \centering
+            \includegraphics[width=\textwidth]{plot_exact.png}
+            \\ Exact Mode
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Cluster Visualization}
+    \centering
+    \includegraphics[width=0.7\textwidth]{clusters_final.png}
+    
+    Visualization of final cluster assignments.
+\end{frame}
+
+\section{Future Work}
+\begin{frame}{Future Work}
+    \begin{itemize}
+        \item \textbf{GEMM Approach}: 
+        \begin{itemize}
+            \item Reformulate distance calculation as Matrix Multiplication: $\|x - c\|^2 = x^2 + c^2 - 2xc$.
+            \item Leverage Tensor Cores on H100 for maximum throughput.
+            \item Potential for significant speedup over standard memory-bound kernels.
+        \end{itemize}
+    \end{itemize}
+\end{frame}
+
+\begin{frame}
+    \centering
+    \Huge
+    Thank You!
+\end{frame}
+
+\end{document}

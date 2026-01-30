@@ -1,0 +1,8 @@
+CUDA VERSION (nvcc)
+Using compilers:
+/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/GCCcore/13.3.0/bin/g++
+/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/CUDA/12.6.0/bin/nvcc
+
+=== Verification phase skipped (missing Makefile_omp) === 
+Proceeding to benchmark...
+OMP_NUM_THREADS=1 ./kmeans.exe input/large.in 1000 100000000 50000 100

@@ -1,0 +1,12 @@
+CUDA VERSION (nvcc)
+Using compilers:
+/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/GCCcore/13.3.0/bin/g++
+/cvmfs/software.hpc.rwth.de/Linux/RH9/x86_64/intel/sapphirerapids/software/CUDA/12.6.0/bin/nvcc
+
+=== Verification phase skipped (missing Makefile_omp) === 
+Proceeding to benchmark...
+nvcc -I. -std=c++14 -Xcompiler -fopenmp -arch=sm_90                       -O3                      -c -o main.o main.cu
+nvcc -std=c++14 -Xcompiler -fopenmp -arch=sm_90                       -O3                      -o kmeans.exe main.o -lgomp -lcublas
+module load Python && python input/gen_input.py --file input/large.in --k 50000 --n 100000000 --dim_x 1000 --dim_y 1000
+Generated 100000000 points around 50000 centroids. Written to input/large.in.
+OMP_NUM_THREADS=1 ./kmeans.exe input/large.in 1000 100000000 50000 100
