@@ -68,7 +68,7 @@
         "typeinfo": "cpp",
         "variant": "cpp"
     },
-    "latex-workshop.latex.autoBuild.run": "onFileChange",
+    "latex-workshop.latex.autoBuild.run": "onSave",
     "latex-workshop.view.pdf.viewer": "tab",
     "latex-workshop.latex.recipes": [
         {
@@ -91,5 +91,6 @@
             "env": {}
         }
     ],
-    "latex-workshop.formatting.latex": "latexindent"
+    "latex-workshop.formatting.latex": "latexindent",
+    "latex-workshop.formatting.latexindent.path": "/Volumes/Samsung_T5/Projects/lab-openmp/.vscode/latexindent_wrapper.sh"
 }

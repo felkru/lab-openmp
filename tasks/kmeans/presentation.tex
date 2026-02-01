@@ -37,509 +37,127 @@
 
 \frame{\titlepage}
 
-\begin{frame}{Agenda}
-    \tableofcontents
-\end{frame}
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Recap: K-Means Algorithm}
 \begin{frame}{Recap: K-Means Algorithm}
 
-\begin{enumerate}
-  \item \textbf{Initialization:} Select $k$ initial centroids (randomly).
-  \item \textbf{Assignment:} Assign each data point to the nearest centroid.
-  \item \textbf{Update:} Recalculate centroids as the mean of assigned points.
-  \item \textbf{Repeat:} Until convergence or max iterations.
-\end{enumerate}
+  \begin{enumerate}
+    \item \textbf{Initialization:} Select $k$ initial centroids (randomly).
+    \item \textbf{Assignment:} Assign each data point to the nearest centroid.
+    \item \textbf{Update:} Recalculate centroids as the mean of assigned points.
+    \item \textbf{Repeat:} Until convergence or max iterations.
+  \end{enumerate}
 
-\vspace{0.4cm}
-\textbf{Pseudocode:}
+  \vspace{0.4cm}
+  \textbf{Pseudocode:}
 
-\begin{beamercolorbox}[rounded=true,shadow=true,sep=8pt]{block body}
-\ttfamily\small
-Initialize centroids = random(k)\\
-While not converged:\\
-\hspace*{1em}For point in data:\\
-\hspace*{2em}closest = argmin(distance(point, c))\\
-\hspace*{2em}assign(point, closest)\\
-\hspace*{1em}For c in centroids:\\
-\hspace*{2em}c = mean(assigned\_points)
-\end{beamercolorbox}
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\newpage
-\begin{frame}{First steps – Pseudocode}
-
-\noindent We implemented the tips from the lecture slides with minor adjustments.
-\vspace{0.35cm}
-
-\begin{beamercolorbox}[rounded=true,shadow=true,sep=8pt]{block body}
-\ttfamily\small
-\#pragma omp target data map(to:points[0:n])\\
-for (int iter = 0; iter < niters; ++iter) \{\\
-\hspace*{1em}\#pragma omp target teams distribute parallel for\\
-\hspace*{2em}map(to:centroids[0:k])\\
-\hspace*{2em}map(from:assignment[0:n])\\
-\hspace*{1em}for (int i = 0; i < n; ++i) \{\\
-\hspace*{2em}...\\
-\hspace*{1em}\}\\
-\}
-\end{beamercolorbox}
+  \begin{beamercolorbox}[rounded=true,shadow=true,sep=8pt]{block body}
+    \ttfamily\small
+    Initialize centroids = random(k)\\
+    While not converged:\\
+    \hspace*{1em}For point in data:\\
+    \hspace*{2em}closest = argmin(distance(point, c))\\
+    \hspace*{2em}assign(point, closest)\\
+    \hspace*{1em}For c in centroids:\\
+    \hspace*{2em}c = mean(assigned\_points)
+  \end{beamercolorbox}
 
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}{First steps -- Results}
+\begin{frame}{Example}
+  \centering
+  \includegraphics[width=0.7\textwidth]{clusters_final.png}
 
-\vspace{0.4cm}
+  Visualization of final cluster assignments.
+\end{frame}
 
-\begin{columns}[T]
-
-% Small
-\begin{column}{0.33\textwidth}
-\centering
-\textbf{Small data}
-
-\vspace{0.3cm}
-{\Huge 0.0173 s}
-\end{column}
-
-% Mid
-\begin{column}{0.33\textwidth}
-\centering
-\textbf{Mid data}
-
-\vspace{0.3cm}
-{\Huge 8.086 s}
-\end{column}
-
-% Large
-\begin{column}{0.33\textwidth}
-\centering
-\textbf{Large data}
-
-\vspace{0.3cm}
-{\Huge $\sim$ 15 min}
-\end{column}
-
-\end{columns}
-
-\vspace{1cm}
-
-\begin{block}{Whats the main focus of the lecture?}
-\textbf{Optimization and performance!}
-\end{block}
+\begin{frame}{Computation Flow}
+  \centering
+  \includegraphics[width=0.9\textwidth]{images/flow.jpeg}
 
 \end{frame}
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\newpage
-\section{Mini Batch}
-\begin{frame}{First Optimization: OpenMp Mini Batch}
-Instead of using the full dataset in every iteration, we use a
-\textbf{Mini Batch K-Means} for large datasets.
+\begin{frame}{Memory Utilisation}
+  \centering
+  \includegraphics[width=0.5\textwidth]{images/coalesced.jpeg}
 
-\vspace{0.4cm}
+  Store the points and centroids in a coalesced manner:
 
-\begin{itemize}
-  \item The dataset is \textbf{distributed across multiple GPUs}.
-  \item Each iteration processes only a \textbf{random subset} per GPU.
-  \item A new random offset is chosen per iteration to sample different points.
-  \item GPUs compute \textbf{partial sums and counts} for the centroids.
-  \item Final centroids are obtained by \textbf{averaging across all GPUs}.
-\end{itemize}
-
-\vspace{0.4cm}
-
-\begin{block}{Key idea}
-By using different mini batches across the iterations, it reduces computation cost and memory
-traffic while still converging to meaningful centeroids.
-\end{block}
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}{Mini Batch (Sampling)}
-
-\begin{beamercolorbox}[rounded=true,shadow=true,sep=8pt]{block body}
-\ttfamily\small
-for each iteration do\\
-\hspace*{1em}for each GPU do\\
-\hspace*{2em}choose random offset in local data\\
-\hspace*{2em}process a fixed-size batch starting at this offset\\
-\hspace*{1em}end for\\
-end for
-\end{beamercolorbox}
-
-\vspace{0.35cm}
-Each iteration processes only a small, randomly selected subset of the
-local data on every GPU.
-\end{frame}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}{Mini Batch (Update)}
-
-\begin{beamercolorbox}[rounded=true,shadow=true,sep=8pt]{block body}
-\ttfamily\small
-for each batch do\\
-\hspace*{1em}assign points to nearest centroids\\
-\hspace*{1em}compute partial sums and counts\\
-end for\\
-aggregate results across GPUs\\
-update centroids using averaged batch statistics
-\end{beamercolorbox}
-
-\vspace{0.35cm}
-
-The centroids are updated using batch statistics.
-Different mini-batches are observed over multiple iterations.
-
-\end{frame}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\newpage
-\begin{frame}{OpenMp Mini Batch Results}
-
-\centering
-\textbf{Mini-Batch K-Means was applied only to the large dataset}
-
-\vspace{0.6cm}
-
-\begin{columns}[T]
-  % 1gpu
-  \begin{column}{0.45\textwidth}
-    \centering
-    \textbf{Large data (1 GPU)}
-
-    \vspace{0.4cm}
-    \Huge 0.60 s
-  \end{column}
-
-  % 4gpu
-  \begin{column}{0.45\textwidth}
-    \centering
-    \textbf{Large data (4 GPUs)}
-
-    \vspace{0.4cm}
-    \Huge 0.42 s
-  \end{column}
-\end{columns}
-
-\vspace{0.8cm}
-
-\begin{block}{Takeaway}
-Mini-batching significantly reduces runtime for large datasets.
-However, since only subsets of the data are processed per iteration,
-the resulting centroids are an approximation and may differ from the
-exact K-Means solution.
-\end{block}
+  [x0, y0, x1, y1, x2, y2, ...] \quad $\rightarrow$ \quad [x0, x1, x2, ...] AND [y0, y1, y2, ...]
 
 
 \end{frame}
 
+\begin{frame}{Memory Utilisation}
+  \centering
+  \includegraphics[width=0.8\textwidth]{images/pinned_memory.jpeg}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  \vspace{0.4cm}
 
-
-\section{CUDA Approach}
-\begin{frame}{The System Architecture visualized}
-    \centering
-    \includegraphics[width=1\textwidth]{images/flow.jpeg}
-    \vspace{0.5cm}
-    \begin{itemize}
-        \item Parallel allocation 
-        \item Compute assignments
-        \item Gather partial sums
-        \item Update centroids (GPU 0)
-        \item Broadcast 
-    \end{itemize}
+  \includegraphics[width=0.5\textwidth]{images/allocation.jpeg}
 \end{frame}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}{What is CUDA?}
-\begin{itemize}
-  \item \textbf{CUDA} (Compute Unified Device Architecture) is made by NVIDIA and its general purpose is GPU computing.
-  \item It enables the use of \textbf{massively parallel kernels}
-        on thousands of GPU threads.
-  \item CUDA offers \textbf{explicit control over memory and execution},
-        including device memory, pinned memory and streams.
-  \item This makes CUDA well suited for \textbf{performance critical
-        numerical workloads}.
-\end{itemize}
 
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\begin{frame}{Why CUDA?}
-
-\begin{itemize}
-  \item \textbf{Explicit control over memory and execution}
-  \begin{itemize}
-    \item Pinned host memory, streams, asynchronous data transfers
-  \end{itemize}
+\begin{frame}{Memory Utilisation}
+  \centering
+  \includegraphics[width=0.5\textwidth]{images/allocation.jpeg}
 
   \vspace{0.2cm}
-
-  \item \textbf{Fine-grained kernel optimization}
   \begin{itemize}
-    \item Atomic operations, shared memory, thread-level parallelism
+    \item \texttt{cudaMalloc(ptr, size)}: Allocates memory on GPU device
+    \item \texttt{cudaMallocHost(ptr, size)}: Allocates \textbf{pinned memory} on host
+    \item \texttt{cudaMemcpy(dst, src, size, dir)}: Synchronous copy between host $\leftrightarrow$ device
+    \item \texttt{cudaMemsetAsync(ptr, val, count, stream)}: Asynchronously fills device memory with a constant byte value
   \end{itemize}
-
-  \vspace{0.2cm}
-
-  \item \textbf{Efficient multi-GPU execution}
-  \begin{itemize}
-    \item OpenMP orchestration with \texttt{cudaSetDevice}
-  \end{itemize}
-\end{itemize}
-
-\end{frame}
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\newpage
-\begin{frame}[fragile]{Memory Management}
-
-\textbf{Goal:} To reduce the data transfer and to avoid overhead and overlap communication with computation.
-
-\vspace{0.4cm}
-
-\begin{beamercolorbox}[rounded=true,shadow=true,sep=8pt]{block body}
-{\normalfont\ttfamily\footnotesize\upshape\mdseries
-\begin{lstlisting}
-// Host Pinned Memory Allocation
-double *pinned_x, *pinned_y;
-cudaMallocHost(&pinned_x, n * sizeof(double));
-cudaMallocHost(&pinned_y, n * sizeof(double));
-
-// Copying to Device (Async)
-cudaMemcpyAsync(devices[d].points_x, pinned_x + start,
-               devices[d].point_count * sizeof(double),
-               cudaMemcpyHostToDevice, devices[d].stream);
-\end{lstlisting}
-}
-\end{beamercolorbox}
-
 \end{frame}
 
 
-
-
-\begin{frame}{Memory Management}
-
-\begin{itemize}
-  \item \textbf{Pinned host memory}
-  \begin{itemize}
-    \item Avoids paging and enables direct memory access (DMA).
-    \item Results in higher and more stable host-to-device bandwidth.
-  \end{itemize}
-
-  \vspace{0.3cm}
-
-  \item \textbf{CUDA streams}
-  \begin{itemize}
-    \item Allow asynchronous memory copies and kernel execution.
-    \item Enable overlap of data transfers and computation.
-  \end{itemize}
-
-  \vspace{0.3cm}
-
-  \item \textbf{Overall effect}
-  \begin{itemize}
-    \item Reduced idle time on the GPU.
-    \item Better utilization of available hardware resources.
-  \end{itemize}
-\end{itemize}
-
+\begin{frame}{Cache Blocking}
+  \centering
+  \includegraphics[width=1.1\textwidth]{images/shared_memory.jpeg}
 \end{frame}
 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}{The Kernel: Nearest Centroid}
-
-\vspace{0.2cm}
-\textbf{Kernel responsibilities:}
-
-\vspace{0.25cm}
-\begin{itemize}
-  \item \textbf{Thread mapping:} one thread per data point
-  \item \textbf{Computation:} nearest centroid search via distance evaluation
-  \item \textbf{Accumulation:} global centroid updates using \textbf{atomicAdd}
-\end{itemize}
-
-\vspace{0.25cm}
-Centroid updates are shared across threads and therefore need an atomic operation.
-\end{frame}
-
-\begin{frame}[fragile]{The Kernel: Nearest Centroid}
-
-\vspace{0.2cm}
-\begin{beamercolorbox}[rounded=true,shadow=true,sep=8pt]{block body}
-{\normalfont\ttfamily\footnotesize\upshape\mdseries
-\begin{lstlisting}
-__global__ void determine_nearest_centroid(...) {
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx < batch_size) {
-        // ... find nearest centroid logic [omitted] ...
-
-        // Accumulate results directly in global memory
-        atomicAdd(&sum_x[assignment], px);
-        atomicAdd(&sum_y[assignment], py);
-        atomicAdd(&count[assignment], 1);
-    }
-}
-\end{lstlisting}
-}
-\end{beamercolorbox}
-\vspace{0.25cm}
-The performance depends on the distribution of the points across the centroids.
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\begin{frame}{Multi-GPU Strategy}
-
-\vspace{0.15cm}
-\textbf{Host parallelism via OpenMP, one control thread per GPU.}
-
-\vspace{0.25cm}
-
-\begin{itemize}
-  \item \textbf{Mapping} OpenMP threads are mapped one to one to GPUs
-  \item \textbf{Device binding:} each thread operates on a fixed CUDA device
-  \item \textbf{Asynchrony:} per-GPU streams enable concurrent execution
-  \item \textbf{Work split:} workload is distributed across all devices
-\end{itemize}
-
-\end{frame}
-
-\begin{frame}[fragile]{Multi-GPU Strategy}
-
-\vspace{0.10cm}
-\begin{beamercolorbox}[rounded=true,shadow=true,sep=8pt]{block body}
-{\normalfont\ttfamily\footnotesize\upshape\mdseries
-\begin{lstlisting}
-int num_devices = 4;
-omp_set_num_threads(num_devices);
-
-#pragma omp parallel num_threads(num_devices)
-{
-    int d = omp_get_thread_num();
-    cudaSetDevice(d); // Bind thread to GPU
-
-    // Create per-device stream
-    cudaStreamCreate(&devices[d].stream);
-
-    // ... Allocate and Compute ...
-}
-\end{lstlisting}
-}
-\end{beamercolorbox}
-
-\end{frame}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section{Results}
-\begin{frame}{Cuda Final Results}
-
-\vspace{0.35cm}
-
-% ----------- Header Row -----------
-\begin{columns}[T,onlytextwidth]
-\column{0.72\textwidth}
-\centering
-{\Large \textbf{Mini-batches}}
-\column{0.28\textwidth}
-\centering
-{\Large \textbf{Exact}}
-\end{columns}
-
-\vspace{0.35cm}
-
-% ----------- Main Content -----------
-\begin{columns}[T,onlytextwidth]
-
-% ---- Mini-batches: two columns ----
-\column{0.72\textwidth}
-\begin{columns}[T,onlytextwidth]
-\column{0.5\textwidth}
-\centering
-{\large \textbf{CUDA}}\\[0.25cm]
-{\Huge 0.60\,s}\\[-0.05cm]
-\small (1 GPU)\\[0.35cm]
-{\Huge 0.37\,s}\\[-0.05cm]
-\small (4 GPUs)
-
-\column{0.5\textwidth}
-\centering
-{\large \textbf{OpenMP}}\\[0.25cm]
-{\Huge 0.60\,s}\\[-0.05cm]
-\small (1 GPU)\\[0.35cm]
-{\Huge 0.42\,s}\\[-0.05cm]
-\small (4 GPUs)
-\end{columns}
-
-% ---- Exact: single column ----
-\column{0.28\textwidth}
-\centering
-{\large \textbf{CUDA}}\\[0.25cm]
-{\Huge 66\,s}\\[-0.05cm]
-\small (4 GPUs)
-
-\end{columns}
-
-\vspace{0.55cm}
-\centering
-\small 100M points \;\textbullet\; 50K centroids
-
-\end{frame}
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{frame}{Performance Plots}
-    \begin{columns}
-        \begin{column}{0.5\textwidth}
-            \centering
-            \includegraphics[width=\textwidth]{plot_mini_batches.png}
-            \\ Mini-Batch Mode
-        \end{column}
-        \begin{column}{0.5\textwidth}
-            \centering
-            \includegraphics[width=\textwidth]{plot_exact.png}
-            \\ Exact Mode
-        \end{column}
-    \end{columns}
+  \begin{columns}
+    \begin{column}{0.5\textwidth}
+      \centering
+      \includegraphics[width=\textwidth]{images/plot.png}
+    \end{column}
+  \end{columns}
 \end{frame}
 
-\begin{frame}{Cluster Visualization}
-    \centering
-    \includegraphics[width=0.7\textwidth]{clusters_final.png}
-    
-    Visualization of final cluster assignments.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
+\begin{frame}{Approximation}
+  Instead of using the full dataset in every iteration, we use a random subset of it.
+
+
+  \includegraphics[width=0.5\textwidth]{plot_mini_batches.png}
+
 \end{frame}
 
-\section{Future Work}
-\begin{frame}{Future Work}
-    \begin{itemize}
-        \item \textbf{GEMM Approach}: 
-        \begin{itemize}
-            \item Reformulate distance calculation as Matrix Multiplication: $\|x - c\|^2 = x^2 + c^2 - 2xc$.
-            \item Leverage Tensor Cores on H100 for maximum throughput.
-            \item Potential for significant speedup over standard memory-bound kernels.
-        \end{itemize}
-    \end{itemize}
-\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\begin{frame}
-    \centering
-    \Huge
-    Thank You!
-\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% \section{Future Work}
+% \begin{frame}{Future Work}
+%   \begin{itemize}
+%     \item \textbf{GEMM Approach}:
+%           \begin{itemize}
+%             \item Reformulate distance calculation as Matrix Multiplication: $\|x - c\|^2 = x^2 + c^2 - 2xc$.
+%             \item Leverage Tensor Cores on H100 for maximum throughput.
+%             \item Potential for significant speedup over standard memory-bound kernels.
+%           \end{itemize}
+%   \end{itemize}
+% \end{frame}
+
+
 
 \end{document}

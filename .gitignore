@@ -44,3 +44,17 @@ venv/
 # 4. Evolutionary files
 # ------------------------------------
 testevolve
+# ------------------------------------
+# 5. LaTeX Build Artifacts
+# ------------------------------------
+*.aux
+*.log
+*.nav
+*.out
+*.snm
+*.synctex.gz
+*.toc
+*.vrb
+*.pdf
+*.fdb_latexmk
+*.fls
